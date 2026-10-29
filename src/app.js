@@ -77,17 +77,17 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Cloud-only browser configuration ---
     const APPWRITE_CONFIG = Object.freeze({
         endpoint: 'https://sgp.cloud.appwrite.io/v1',
-        projectId: '6acfc865002e5d53c738',
-        databaseId: '6acfd12a0028addfd8d2',
+        projectId: '6ab3a652002e667289ab',
+        databaseId: '6ab3c1c70002db082d00',
         tableId: 'songs',
-        bucketId: 'music-files',
+        bucketId: '6ab3a724003a859f835a',
         functionId: 'song-admin',
         // Keep this aligned with the maximum file size configured for the
         // Appwrite Storage bucket.
-        maxUploadBytes: 50 * 1024 * 1024,
+        maxUploadBytes: 50_000_000,
         // Set this to the admin user's Appwrite $id. It is public, but must not
         // be guessed or replaced with an email/password.
-        adminUserId: '6acfd39f001966e5c12a'
+        adminUserId: '6ab3f33c001d0e271d16'
     });
     const APPWRITE_PAGE_SIZE = 100;
     const LIBRARY_REFRESH_DELAY_MS = 200;
@@ -131,14 +131,13 @@ document.addEventListener('DOMContentLoaded', () => {
     let isNotesAdmin = false;
     let uploadQueue = [];
     const REMOVED_CATEGORY_FOLDER_KEYS = new Set(['cloud', 'alone', 'person']);
-    const CATEGORY_TAB_KEYS = Object.freeze(['nhacdo', 'karaoke', 'tiktok', 'wedding', 'giaitri', 'cooking', 'sleep']);
+    const CATEGORY_TAB_KEYS = Object.freeze(['nhacdo', 'karaoke', 'wedding', 'giaitri', 'cooking', 'sleep']);
     const PLAYLIST_TAB_LABELS = Object.freeze({
         all: 'Tất Cả',
         unfiled: 'Bài Hát Chưa Chọn',
         nhacdo: 'Nhạc Đỏ',
         cooking: 'Nấu Ăn',
         karaoke: 'Karaoke',
-        tiktok: 'SoundKer',
         giaitri: 'Giải Trí',
         wedding: 'Wedding',
         sleep: 'Đi Ngủ',
@@ -288,7 +287,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const nhacdoCountEl = document.getElementById('nhacdo-count');
     const cookingCountEl = document.getElementById('cooking-count');
     const karaokeCountEl = document.getElementById('karaoke-count');
-    const tiktokCountEl = document.getElementById('tiktok-count');
     const giaitriCountEl = document.getElementById('giaitri-count');
     const weddingCountEl = document.getElementById('wedding-count');
     const sleepCountEl = document.getElementById('sleep-count');
@@ -931,7 +929,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     queries: buildAppwritePaginationQueries(Query, APPWRITE_PAGE_SIZE, pageOffset)
                 })
             });
-            const page = Array.isArray(response?.rows) ? response.rows : [];
+            if (!Array.isArray(response?.rows)) {
+                throw new Error('Appwrite không trả về danh sách bài hát hợp lệ.');
+            }
+            const page = response.rows;
             rows.push(...page);
             offset += page.length;
 
@@ -941,13 +942,38 @@ document.addEventListener('DOMContentLoaded', () => {
                 : Number(rawTotal);
             const hasTotal = Number.isFinite(total) && total >= 0;
             if (hasTotal && rows.length >= total) break;
-            if (page.length === 0) break;
+            if (page.length === 0) {
+                if (hasTotal) throw new Error('Danh sách Appwrite bị thiếu trang dữ liệu.');
+                break;
+            }
             if (page.length < APPWRITE_PAGE_SIZE && !hasTotal) break;
         }
 
         const songs = rows.map(mapAppwriteRow).filter(Boolean);
         songs.sort(compareSongTitles);
         return songs;
+    }
+
+    function createSongAdminExecutionError(execution, responseBody, fallbackError) {
+        const status = Number(execution?.responseStatusCode);
+        const safeStatus = Number.isInteger(status) && status >= 100 && status <= 599 ? status : 0;
+        const safeDetail = (value) => {
+            const detail = String(value || '').trim();
+            return detail && detail.length <= 200
+                && !/https?:\/\/|\b(?:token|secret|signature|x-amz-|api[_-]?key)\b|[A-Za-z0-9_-]{24,}/i.test(detail)
+                ? detail.replace(/[\x00-\x1f]/g, ' ')
+                : '';
+        };
+        const detail = safeDetail(responseBody?.error) || safeDetail(fallbackError) || 'Không rõ nguyên nhân.';
+        const stage = /^[a-z][a-z0-9-]{0,39}$/.test(String(responseBody?.stage || '')) ? responseBody.stage : '';
+        const upstream = Number(responseBody?.upstreamStatus);
+        const upstreamStatus = Number.isInteger(upstream) && upstream >= 100 && upstream <= 599 ? upstream : 0;
+        const error = new Error(`Function HTTP ${safeStatus || 'không rõ'}: ${detail}`);
+        error.name = 'FunctionExecutionError';
+        error.statusCode = safeStatus;
+        error.stage = stage;
+        error.upstreamStatus = upstreamStatus;
+        return error;
     }
 
     async function executeSongAdminFunction(payload, fallbackError) {
@@ -986,11 +1012,9 @@ document.addEventListener('DOMContentLoaded', () => {
             throw error;
         }
 
-        if (execution?.status !== 'completed') {
-            throw new Error(`${action === 'stats' ? 'Stats' : 'Function'} execution status: ${execution?.status || 'unknown'}`);
-        }
-
         const responseStatusCode = Number(execution?.responseStatusCode);
+        let responseBody = null;
+        try { responseBody = JSON.parse(execution?.responseBody || '{}'); } catch { }
         if (!Number.isFinite(responseStatusCode) || responseStatusCode < 200 || responseStatusCode >= 300) {
             if (requireAuth && responseStatusCode === 401) {
                 currentAuthUser = null;
@@ -998,29 +1022,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 isNotesAdmin = false;
                 updateAdminUI();
             }
-            if (action === NOTE_ACTIONS.SUBMIT) {
-                let responseMessage = '';
-                try {
-                    responseMessage = JSON.parse(execution?.responseBody || '{}')?.error || '';
-                } catch { }
-                if (responseMessage) throw new Error(responseMessage);
-            }
-            throw new Error(
-                `${action === 'stats' ? 'Stats' : 'Function'} HTTP ${execution?.responseStatusCode}: ${execution?.responseBody || ''}`
-            );
+            throw createSongAdminExecutionError(execution, responseBody, fallbackError);
         }
-
-        let responseBody;
-        try {
-            responseBody = JSON.parse(execution?.responseBody || '{}');
-        } catch (error) {
-            throw new Error(
-                `${action === 'stats' ? 'Invalid stats' : 'Invalid Function'} JSON: ${execution?.responseBody || ''}`
-            );
+        if (execution?.status !== 'completed') {
+            throw createSongAdminExecutionError(execution, responseBody, fallbackError);
+        }
+        if (!responseBody) {
+            throw new Error('Function trả về JSON không hợp lệ.');
         }
 
         if (responseBody?.success !== true) {
-            throw new Error(responseBody?.error || execution?.errors || fallbackError);
+            throw createSongAdminExecutionError(execution, responseBody, fallbackError);
         }
         return responseBody;
     }
@@ -2770,6 +2782,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 // A failed refresh must not replace the usable library.
                 if (!hasLoadedSongs && songListEl) {
                     songListEl.innerHTML = `<div class="loading-spinner">Không thể kết nối danh sách bài hát.</div>`;
+                } else if (hasLoadedSongs && typeof showToast === 'function') {
+                    showToast('Không thể cập nhật danh sách từ Appwrite. Đang hiển thị dữ liệu đã lưu trên thiết bị.', 'warning');
                 }
             }
         })();
@@ -2802,7 +2816,6 @@ document.addEventListener('DOMContentLoaded', () => {
         nhacdo: 'Nhạc Đỏ',
         cooking: 'Nấu Ăn',
         karaoke: 'Karaoke',
-        tiktok: 'Tiktok',
         giaitri: 'Giải Trí',
         wedding: 'Wedding',
         sleep: 'Đi Ngủ'
@@ -2821,7 +2834,6 @@ document.addEventListener('DOMContentLoaded', () => {
             nhacdo: ['nhacdo'],
             cooking: ['cooking'],
             karaoke: ['karaoke'],
-            tiktok: ['tiktok', 'tik-tok'],
             giaitri: ['giaitri', 'giai tri', 'game', 'game-over'],
             wedding: ['wedding', 'wedding-couple'],
             sleep: ['sleep']
@@ -2835,7 +2847,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function getSongCategoriesForUI(song) {
         if (!song) return [];
-        return ['nhacdo', 'karaoke', 'tiktok', 'giaitri', 'wedding', 'sleep', 'cooking']
+        return ['nhacdo', 'karaoke', 'giaitri', 'wedding', 'sleep', 'cooking']
             .filter((catName) => isSongInCategory(song, catName));
     }
 
@@ -2853,7 +2865,6 @@ document.addEventListener('DOMContentLoaded', () => {
         let nhacdoCount = 0;
         let cookingCount = 0;
         let karaokeCount = 0;
-        let tiktokCount = 0;
         let giaitriCount = 0;
         let weddingCount = 0;
         let sleepCount = 0;
@@ -2865,7 +2876,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (cats.includes('nhacdo')) nhacdoCount++;
             if (cats.includes('cooking')) cookingCount++;
             if (cats.includes('karaoke')) karaokeCount++;
-            if (cats.includes('tiktok')) tiktokCount++;
             if (cats.includes('giaitri')) giaitriCount++;
             if (cats.includes('wedding')) weddingCount++;
             if (cats.includes('sleep')) sleepCount++;
@@ -2875,7 +2885,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (nhacdoCountEl) nhacdoCountEl.textContent = nhacdoCount;
         if (cookingCountEl) cookingCountEl.textContent = cookingCount;
         if (karaokeCountEl) karaokeCountEl.textContent = karaokeCount;
-        if (tiktokCountEl) tiktokCountEl.textContent = tiktokCount;
         if (giaitriCountEl) giaitriCountEl.textContent = giaitriCount;
         if (weddingCountEl) weddingCountEl.textContent = weddingCount;
         if (sleepCountEl) sleepCountEl.textContent = sleepCount;
@@ -2983,9 +2992,6 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (currentTab === 'karaoke') {
             currentPlaylist = currentPlaylist.filter(s => s && getSongCategoriesForUI(s).includes('karaoke'));
             playlistHeadingEl.textContent = isMobile ? 'Karaoke' : 'Danh Sách Bài Hát Karaoke';
-        } else if (currentTab === 'tiktok') {
-            currentPlaylist = currentPlaylist.filter(s => s && getSongCategoriesForUI(s).includes('tiktok'));
-            playlistHeadingEl.textContent = isMobile ? 'SoundKer' : 'Danh Sách Bài Hát SoundKer';
         } else if (currentTab === 'giaitri') {
             currentPlaylist = currentPlaylist.filter(s => s && getSongCategoriesForUI(s).includes('giaitri'));
             playlistHeadingEl.textContent = isMobile ? 'Giải Trí' : 'Danh Sách Bài Hát Giải Trí';
@@ -3128,7 +3134,6 @@ document.addEventListener('DOMContentLoaded', () => {
             nhacdo: 'Nhạc Đỏ',
             cooking: 'Nấu Ăn',
             karaoke: 'Karaoke',
-            tiktok: 'SoundKer',
             giaitri: 'Giải Trí',
             wedding: 'Wedding',
             sleep: 'Đi Ngủ'
@@ -3155,7 +3160,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const hasNhacdo = isSongCategoryActive(song, 'nhacdo');
             const hasCooking = isSongCategoryActive(song, 'cooking');
             const hasKaraoke = isSongCategoryActive(song, 'karaoke');
-            const hasTiktok = isSongCategoryActive(song, 'tiktok');
             const hasGiaitri = isSongCategoryActive(song, 'giaitri');
             const hasWedding = isSongCategoryActive(song, 'wedding');
             const hasSleep = isSongCategoryActive(song, 'sleep');
@@ -3163,7 +3167,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const categoryTagButtons = canEditCategories ? `
                     <button class="cat-tag-btn ${hasNhacdo ? 'active' : ''}" data-cat="nhacdo" title="Nhạc Đỏ"><span class="icon-cat icon-nhacdo"></span></button>
                     <button class="cat-tag-btn ${hasKaraoke ? 'active' : ''}" data-cat="karaoke" title="Karaoke"><span class="icon-cat icon-karaoke"></span></button>
-                    <button class="cat-tag-btn ${hasTiktok ? 'active' : ''}" data-cat="tiktok" title="SoundKer"><span class="icon-cat icon-tiktok"></span></button>
                     <button class="cat-tag-btn ${hasGiaitri ? 'active' : ''}" data-cat="giaitri" title="Giải Trí"><span class="icon-cat icon-giaitri"></span></button>
                     <button class="cat-tag-btn ${hasWedding ? 'active' : ''}" data-cat="wedding" title="Wedding"><span class="icon-cat icon-wedding"></span></button>
                     <button class="cat-tag-btn ${hasSleep ? 'active' : ''}" data-cat="sleep" title="Đi ngủ"><span class="icon-cat icon-sleep"></span></button>
@@ -3629,8 +3632,13 @@ document.addEventListener('DOMContentLoaded', () => {
             isPlaying = false;
             updatePlayerUI();
             if (err?.name !== 'AbortError' || wasRequestedToPlay) {
-                console.error('[LocalSound] Không thể chuẩn bị bài hát:', err?.name || 'Error');
-                showToast('Không thể chuẩn bị bài hát để phát. Kiểm tra kết nối hoặc quyền Storage rồi thử lại.', 'warning');
+                const functionError = err?.name === 'FunctionExecutionError';
+                console.error('[LocalSound] Không thể chuẩn bị bài hát:', functionError
+                    ? { status: err.statusCode, stage: err.stage || 'unknown', upstreamStatus: err.upstreamStatus || undefined, reason: err.message }
+                    : { name: err?.name || 'Error', status: Number(err?.code) || undefined, reason: getSafeDiagnosticError(err) });
+                showToast(functionError
+                    ? `Không thể chuẩn bị bài hát để phát. ${err.message}${err.stage ? ` (${err.stage})` : ''}`
+                    : 'Không thể chuẩn bị bài hát để phát. Kiểm tra kết nối rồi thử lại.', 'warning');
             }
         });
         return loadPromise;
@@ -4814,7 +4822,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     artist: normalizeFolderList(song.folders).join(' · ') || 'SoundKer Music',
                     album: 'SoundKer Music',
                     artwork: [
-                        { src: document.getElementById('site-favicon')?.href || `${ASSET_BASE_PATH}logo/white.webp`, sizes: '501x501', type: 'image/webp' }
+                        { src: document.getElementById('site-favicon')?.href || `${ASSET_BASE_PATH}logo/orange.png`, sizes: '1254x1254', type: 'image/png' }
                     ]
                 });
             } catch (e) {
@@ -4837,7 +4845,6 @@ document.addEventListener('DOMContentLoaded', () => {
             sleep: { iconHtml: '<span class="icon-cat icon-sleep" style="margin-right: 4px;"></span>' },
             cooking: { iconHtml: '<span class="icon-cat icon-cooking" style="margin-right: 4px;"></span>' },
             karaoke: { iconHtml: '<span class="icon-cat icon-karaoke" style="margin-right: 4px;"></span>' },
-            tiktok: { iconHtml: '<span class="icon-cat icon-tiktok" style="margin-right: 4px;"></span>' },
             giaitri: { iconHtml: '<span class="icon-cat icon-giaitri" style="margin-right: 4px;"></span>' },
             wedding: { iconHtml: '<span class="icon-cat icon-wedding" style="margin-right: 4px;"></span>' }
         };
@@ -4884,7 +4891,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const categories = [
             { key: 'nhacdo', label: '<span class="icon-cat icon-nhacdo" style="margin-right: 6px;"></span> Nhạc Đỏ' },
             { key: 'karaoke', label: '<span class="icon-cat icon-karaoke" style="margin-right: 6px;"></span> Karaoke' },
-            { key: 'tiktok', label: '<span class="icon-cat icon-tiktok" style="margin-right: 6px;"></span> SoundKer' },
             { key: 'giaitri', label: '<span class="icon-cat icon-giaitri" style="margin-right: 6px;"></span> Giải Trí' },
             { key: 'wedding', label: '<span class="icon-cat icon-wedding" style="margin-right: 6px;"></span> Wedding' },
             { key: 'sleep', label: '<span class="icon-cat icon-sleep" style="margin-right: 6px;"></span> Đi Ngủ' },
@@ -4905,7 +4911,7 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
 
             const chk = row.querySelector('input');
-            const catCleanMap = { nhacdo: 'Nhạc Đỏ', sleep: 'Đi Ngủ', cooking: 'Nấu Ăn', karaoke: 'Karaoke', tiktok: 'SoundKer', giaitri: 'Giải Trí', wedding: 'Wedding' };
+            const catCleanMap = { nhacdo: 'Nhạc Đỏ', sleep: 'Đi Ngủ', cooking: 'Nấu Ăn', karaoke: 'Karaoke', giaitri: 'Giải Trí', wedding: 'Wedding' };
             const catCleanName = catCleanMap[cat.key] || 'danh sách';
 
             chk.addEventListener('click', (e) => {
@@ -4959,7 +4965,6 @@ document.addEventListener('DOMContentLoaded', () => {
             nhacdo: '<span class="icon-cat icon-nhacdo"></span><span class="tag-label"> Nhạc Đỏ</span>',
             cooking: '<span class="icon-cat icon-cooking"></span><span class="tag-label"> Nấu ăn</span>',
             karaoke: '<span class="icon-cat icon-karaoke"></span><span class="tag-label"> Karaoke</span>',
-            tiktok: '<span class="icon-cat icon-tiktok"></span><span class="tag-label"> SoundKer</span>',
             giaitri: '<span class="icon-cat icon-giaitri"></span><span class="tag-label"> Giải Trí</span>',
             wedding: '<span class="icon-cat icon-wedding"></span><span class="tag-label"> Wedding</span>',
             sleep: '<span class="icon-cat icon-sleep"></span><span class="tag-label"> Đi ngủ</span>'
@@ -5096,7 +5101,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     nhacdo: 'Nhạc Đỏ',
                     cooking: 'Nấu Ăn',
                     karaoke: 'Karaoke',
-                    tiktok: 'SoundKer',
                     giaitri: 'Giải Trí',
                     wedding: 'Wedding',
                     sleep: 'Đi Ngủ'
@@ -5308,8 +5312,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         showToast(`Cập nhật folder thất bại: ${error?.message || 'Không rõ nguyên nhân.'}`, 'warning');
                     });
             } else {
-                const catCleanMap = { nhacdo: 'Nhạc Đỏ', sleep: 'Đi Ngủ', cooking: 'Nấu Ăn', karaoke: 'Karaoke', tiktok: 'SoundKer', giaitri: 'Giải Trí', wedding: 'Wedding' };
-                const priorityKeys = ['nhacdo', 'karaoke', 'tiktok', 'giaitri', 'wedding', 'sleep', 'cooking'];
+                const catCleanMap = { nhacdo: 'Nhạc Đỏ', sleep: 'Đi Ngủ', cooking: 'Nấu Ăn', karaoke: 'Karaoke', giaitri: 'Giải Trí', wedding: 'Wedding' };
+                const priorityKeys = ['nhacdo', 'karaoke', 'giaitri', 'wedding', 'sleep', 'cooking'];
                 let activeCatKey = null;
                 for (let key of priorityKeys) {
                     if (cats.includes(key)) {
@@ -5895,7 +5899,7 @@ document.addEventListener('DOMContentLoaded', () => {
             gradient.addColorStop(0, 'rgba(0, 245, 160, 0.5)');
             gradient.addColorStop(0.25, 'rgba(0, 217, 245, 0.78)');
             gradient.addColorStop(0.5, 'rgba(134, 168, 231, 0.9)');
-            gradient.addColorStop(0.75, 'rgba(204, 134, 209, 0.98)');
+            gradient.addColorStop(0.75, 'rgba(255, 102, 0, 0.98)');
             gradient.addColorStop(1, 'rgba(220, 255, 189, 0.98)');
             canvasCtx.fillStyle = gradient;
             canvasCtx.fillRect(x, height - barHeight, barWidth, barHeight);
@@ -5954,7 +5958,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // =========================================================================
-    // Audio Reactive Waveform Visualizer (Purple Neon)
+    // Audio Reactive Waveform Visualizer (Orange)
     // Uses the existing analyserNode from initAudioContext().
     // Falls back to a gentle idle animation when audio is not analysable.
     // =========================================================================
@@ -5995,11 +5999,11 @@ document.addEventListener('DOMContentLoaded', () => {
         resizeWaveCanvas();
 
         // ── Colour helpers ───────────────────────────────────────────────────
-        // Use the app's --accent CSS variable or the SoundKer violet fallback.
+        // Use the app's --accent CSS variable or the SoundKer orange fallback.
         function getAccentColor() {
             const v = getComputedStyle(document.documentElement)
                 .getPropertyValue('--accent').trim();
-            return v || '#8B5CF6';
+            return v || '#FF6600';
         }
 
         // Build a vertical gradient for each bar (dim at centre axis → bright at tip)
@@ -6007,18 +6011,18 @@ document.addEventListener('DOMContentLoaded', () => {
             // bars grow upward AND downward from cy
             const grad = ctx.createLinearGradient(0, cy - barHeight, 0, cy + barHeight);
             if (isDark) {
-                grad.addColorStop(0,    'rgba(237,233,254,0.92)');  // top tip
-                grad.addColorStop(0.30, 'rgba(139,92,246,1.00)');
-                grad.addColorStop(0.50, 'rgba(109,40,217,0.60)');  // centre fade
-                grad.addColorStop(0.70, 'rgba(139,92,246,1.00)');
-                grad.addColorStop(1,    'rgba(237,233,254,0.92)');  // bottom tip
+                grad.addColorStop(0,    'rgba(255,212,179,0.92)');  // top tip
+                grad.addColorStop(0.30, 'rgba(255,102,0,1.00)');
+                grad.addColorStop(0.50, 'rgba(179,71,0,0.60)');  // centre fade
+                grad.addColorStop(0.70, 'rgba(255,102,0,1.00)');
+                grad.addColorStop(1,    'rgba(255,212,179,0.92)');  // bottom tip
             } else {
                 // Light theme: slightly more saturated so bars stay visible
-                grad.addColorStop(0,    'rgba(139,92,246,0.90)');
-                grad.addColorStop(0.30, 'rgba(109,40,217,0.85)');
-                grad.addColorStop(0.50, 'rgba(109,40,217,0.45)');
-                grad.addColorStop(0.70, 'rgba(109,40,217,0.85)');
-                grad.addColorStop(1,    'rgba(139,92,246,0.90)');
+                grad.addColorStop(0,    'rgba(255,102,0,0.90)');
+                grad.addColorStop(0.30, 'rgba(179,71,0,0.85)');
+                grad.addColorStop(0.50, 'rgba(179,71,0,0.45)');
+                grad.addColorStop(0.70, 'rgba(179,71,0,0.85)');
+                grad.addColorStop(1,    'rgba(255,102,0,0.90)');
             }
             return grad;
         }
@@ -6028,7 +6032,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const alpha = isDark
                 ? Math.min(0.62, 0.12 + energy * 0.48)
                 : Math.min(0.42, 0.08 + energy * 0.32);
-            return `rgba(139,92,246,${alpha.toFixed(2)})`;
+            return `rgba(255,102,0,${alpha.toFixed(2)})`;
         }
 
         // ── Main draw loop ───────────────────────────────────────────────────
@@ -6207,7 +6211,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Draw a thin centre axis line (very subtle)
             const axisAlpha = isDark ? 0.12 : 0.07;
-            wctx.strokeStyle = `rgba(139,92,246,${axisAlpha})`;
+            wctx.strokeStyle = `rgba(255,102,0,${axisAlpha})`;
             wctx.lineWidth = 1;
             wctx.beginPath();
             wctx.moveTo(0, cy);

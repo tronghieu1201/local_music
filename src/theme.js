@@ -9,7 +9,7 @@
 
     function syncBranding() {
         const dark = root.dataset.theme === 'dark';
-        const asset = `assets/logo/${dark ? 'dark' : 'white'}.webp`;
+        const asset = `assets/logo/${dark ? 'orange-dark' : 'orange'}.png?v=1`;
         favicon?.setAttribute('href', asset);
         document.querySelectorAll('.brand-logo-img').forEach(image => {
             if (image.getAttribute('src') !== asset) image.setAttribute('src', asset);
@@ -18,7 +18,7 @@
         if (favicon && navigator.mediaSession?.metadata) {
             try {
                 navigator.mediaSession.metadata.artwork = [
-                    { src: favicon.href, sizes: '501x501', type: 'image/webp' }
+                    { src: favicon.href, sizes: '1254x1254', type: 'image/png' }
                 ];
             } catch {
                 // Some browsers do not allow updating active media artwork.

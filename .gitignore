@@ -50,5 +50,8 @@ appwrite.config.json
 # DEPENDENCIES / TEMP FILES
 # =========================
 node_modules/
+.npm-cache/
 coverage/
+dist/
 *.log
+song-admin-deploy.tar.gz

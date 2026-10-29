@@ -23,6 +23,7 @@ function makePlaybackHarness({
     matchingFiles,
     rowError,
     fileError,
+    listError,
     userJwt = 'user-jwt'
 } = {}) {
     const state = { rowRequest: null, fileRequest: null, listRequest: null, signerConfig: null, command: null, signingOptions: null };
@@ -65,6 +66,7 @@ function makePlaybackHarness({
             }
             async listFiles(request) {
                 state.listRequest = { request, client: this.client };
+                if (listError) throw listError;
                 return { files: matchingFiles || [file] };
             }
         },
@@ -116,7 +118,7 @@ test('Appwrite S3 endpoint uses the project region and path-style bucket address
         rowId: 'song-row',
         userJwt: app.userJwt,
         config: app.config,
-        env: { S3_READ_API_KEY: 'read-only-secret' },
+        env: { LOCAL_SOUND_S3_READ_API_KEY: 'read-only-secret' },
         dependencies: app.dependencies
     });
 
@@ -147,7 +149,7 @@ test('S3 endpoint overrides cannot redirect signing to another host or service',
             userJwt: app.userJwt,
             config: app.config,
             env: {
-                S3_READ_API_KEY: 'read-only-secret',
+                LOCAL_SOUND_S3_READ_API_KEY: 'read-only-secret',
                 APPWRITE_S3_ENDPOINT: 'https://attacker.example/v1/s3'
             },
             dependencies: app.dependencies
@@ -165,7 +167,7 @@ test('nested Storage files are signed with their full virtual key', async () => 
         rowId: 'song-row',
         userJwt: app.userJwt,
         config: app.config,
-        env: { S3_READ_API_KEY: 'read-only-secret' },
+        env: { LOCAL_SOUND_S3_READ_API_KEY: 'read-only-secret' },
         dependencies: app.dependencies
     });
 
@@ -184,7 +186,7 @@ test('Vietnamese object keys are passed to SigV4 as raw Unicode, never URL-encod
         rowId: 'song-row',
         userJwt: app.userJwt,
         config: app.config,
-        env: { S3_READ_API_KEY: 'read-only-secret' },
+        env: { LOCAL_SOUND_S3_READ_API_KEY: 'read-only-secret' },
         dependencies: app.dependencies
     });
 
@@ -199,7 +201,7 @@ test('anonymous signing still resolves row and file through Appwrite public read
         rowId: 'song-row',
         userJwt: '',
         config: app.config,
-        env: { S3_READ_API_KEY: 'read-only-secret' },
+        env: { LOCAL_SOUND_S3_READ_API_KEY: 'read-only-secret' },
         dependencies: app.dependencies
     });
 
@@ -216,7 +218,7 @@ test('duplicate S3 object names fail closed instead of signing an ambiguous key'
             rowId: 'song-row',
             userJwt: app.userJwt,
             config: app.config,
-            env: { S3_READ_API_KEY: 'read-only-secret' },
+            env: { LOCAL_SOUND_S3_READ_API_KEY: 'read-only-secret' },
             dependencies: app.dependencies
         }),
         (err) => err.statusCode === 409
@@ -231,7 +233,7 @@ test('a row or Storage file the caller cannot read never receives a presigned UR
             rowId: 'private-row',
             userJwt: app.userJwt,
             config: app.config,
-            env: { S3_READ_API_KEY: 'read-only-secret' },
+            env: { LOCAL_SOUND_S3_READ_API_KEY: 'read-only-secret' },
             dependencies: app.dependencies
         }),
         (err) => err.statusCode === 404
@@ -247,7 +249,7 @@ test('a Storage file denied to the caller is not signed, even when its row is re
             rowId: 'song-row',
             userJwt: app.userJwt,
             config: app.config,
-            env: { S3_READ_API_KEY: 'read-only-secret' },
+            env: { LOCAL_SOUND_S3_READ_API_KEY: 'read-only-secret' },
             dependencies: app.dependencies
         }),
         (err) => err.statusCode === 404
@@ -281,7 +283,7 @@ test('missing S3 signing key falls back only after the caller has read the row a
 
 test('Function playback action accepts public permission-checked requests and never logs the signed URL', async () => {
     const app = makePlaybackHarness();
-    app.context.process.env.S3_READ_API_KEY = 'read-only-secret';
+    app.context.process.env.LOCAL_SOUND_S3_READ_API_KEY = 'read-only-secret';
     const logLines = [];
     const errorLines = [];
     let response;
@@ -300,6 +302,49 @@ test('Function playback action accepts public permission-checked requests and ne
     assert.match(response.body.url, /X-Amz-Signature=redacted/);
     assert.equal(logLines.length + errorLines.length, 0);
     assert.equal(app.state.rowRequest.request.rowId, 'song-row');
+});
+
+test('invalid S3 read credentials report the safe failure stage and upstream status', async () => {
+    const app = makePlaybackHarness({ listError: Object.assign(new Error('private key material'), { code: 403 }) });
+    app.context.process.env.LOCAL_SOUND_S3_READ_API_KEY = 'backend-only-secret';
+    const errorLines = [];
+    let response;
+    await app.api.handlePlaybackUrl({
+        req: { headers: { 'x-appwrite-user-jwt': app.userJwt } },
+        body: { rowId: 'song-row' },
+        config: app.config,
+        dependencies: app.dependencies,
+        log() {},
+        error: (line) => errorLines.push(line),
+        res: { json(body, status = 200) { response = { body, status }; return response; } }
+    });
+
+    assert.equal(response.status, 503);
+    assert.equal(response.body.stage, 's3-file-lookup');
+    assert.equal(response.body.upstreamStatus, 403);
+    assert.match(response.body.error, /invalid or lacks Storage read scope/);
+    assert.doesNotMatch(JSON.stringify(response) + errorLines.join('\n'), /backend-only-secret|private key material/);
+});
+
+test('frontend reports the Function status and safe cause without exposing URLs', () => {
+    const context = vm.createContext({ Error, Number, String });
+    vm.runInContext(`${extractFunction(appSource, 'createSongAdminExecutionError', '    ')}\nglobalThis.makeError = createSongAdminExecutionError;`, context);
+    const error = context.makeError(
+        { responseStatusCode: 503 },
+        { error: 'S3 read key is invalid or lacks Storage read scope.', stage: 's3-file-lookup', upstreamStatus: 403 },
+        'Playback failed.'
+    );
+    assert.equal(error.statusCode, 503);
+    assert.equal(error.stage, 's3-file-lookup');
+    assert.equal(error.upstreamStatus, 403);
+    assert.match(error.message, /Function HTTP 503: S3 read key/);
+
+    const redacted = context.makeError(
+        { responseStatusCode: 502 },
+        { error: 'https://example.test/audio?X-Amz-Signature=secret' },
+        'Playback failed.'
+    );
+    assert.equal(redacted.message, 'Function HTTP 502: Playback failed.');
 });
 
 test('public playback action runs before the authenticated-admin action guard', () => {
@@ -446,19 +491,19 @@ test('frontend playback is signed by rowId and keeps HTMLAudioElement as the str
     assert.doesNotMatch(appSource, /getFileView\(/);
 });
 
-test('the documented S3 API key variable works and the previous name remains a fallback', async () => {
+test('playback uses only the replacement S3 API key variable', async () => {
     const app = makePlaybackHarness();
     const result = await app.api.resolvePlaybackUrl({
         rowId: 'song-row',
         userJwt: app.userJwt,
         config: app.config,
-        env: { APPWRITE_S3_READ_API_KEY: 'canonical-secret', S3_READ_API_KEY: 'legacy-secret' },
+        env: { LOCAL_SOUND_S3_READ_API_KEY: 'replacement-secret', S3_READ_API_KEY: 'leaked-secret' },
         dependencies: app.dependencies
     });
 
     assert.equal(result.success, true);
-    assert.equal(app.state.signerConfig.credentials.secretAccessKey, 'canonical-secret');
-    assert.equal(app.api.getPlaybackS3ReadApiKey({ S3_READ_API_KEY: 'legacy-secret' }), 'legacy-secret');
+    assert.equal(app.state.signerConfig.credentials.secretAccessKey, 'replacement-secret');
+    assert.equal(app.api.getPlaybackS3ReadApiKey({ S3_READ_API_KEY: 'leaked-secret' }), '');
 });
 
 function makeStreamBody(bytes) {
@@ -483,7 +528,7 @@ function makeStreamBody(bytes) {
 
 test('playback diagnosis verifies the one-byte Range headers without consuming the MP3 body', async () => {
     const app = makePlaybackHarness();
-    app.context.process.env.APPWRITE_S3_READ_API_KEY = 'backend-only-secret';
+    app.context.process.env.LOCAL_SOUND_S3_READ_API_KEY = 'backend-only-secret';
     const streamed = makeStreamBody([0x49]);
     let request;
     const logLines = [];
@@ -532,7 +577,7 @@ test('playback diagnosis verifies the one-byte Range headers without consuming t
 
 test('S3 authorization errors are diagnosed and never return a Storage fallback URL', async () => {
     const app = makePlaybackHarness();
-    app.context.process.env.S3_READ_API_KEY = 'backend-only-secret';
+    app.context.process.env.LOCAL_SOUND_S3_READ_API_KEY = 'backend-only-secret';
     const xml = new TextEncoder().encode('<Error><Code>AccessDenied</Code><Message>private</Message></Error>');
     const streamed = makeStreamBody(xml);
     app.dependencies.fetch = async () => ({
@@ -566,7 +611,7 @@ test('S3 authorization errors are diagnosed and never return a Storage fallback 
 
 test('S3 HTTP 400 XML is bounded, reported as the media status, and permits the authorized /view fallback', async () => {
     const app = makePlaybackHarness();
-    app.context.process.env.APPWRITE_S3_READ_API_KEY = 'backend-only-secret';
+    app.context.process.env.LOCAL_SOUND_S3_READ_API_KEY = 'backend-only-secret';
     const xml = new TextEncoder().encode('<Error><Code>InvalidRequest</Code><Message>request rejected</Message></Error>');
     const streamed = makeStreamBody(xml);
     let requests = 0;
@@ -608,7 +653,7 @@ test('S3 HTTP 400 XML is bounded, reported as the media status, and permits the 
 
 test('range-ignored and network-failure responses can fall back without reading the MP3 body', async () => {
     const app = makePlaybackHarness();
-    app.context.process.env.S3_READ_API_KEY = 'backend-only-secret';
+    app.context.process.env.LOCAL_SOUND_S3_READ_API_KEY = 'backend-only-secret';
     const ignoredRangeBody = makeStreamBody([0x49, 0x44, 0x33]);
     let probeSignal;
     app.dependencies.fetch = async (_url, options) => {

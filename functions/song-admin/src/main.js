@@ -272,9 +272,8 @@ function createPlaybackError(message, statusCode) {
 }
 
 function getPlaybackS3ReadApiKey(env = process.env) {
-    // APPWRITE_S3_READ_API_KEY is the documented name. Keep the earlier
-    // S3_READ_API_KEY name as a compatibility alias for existing deployments.
-    return String(env.APPWRITE_S3_READ_API_KEY || env.S3_READ_API_KEY || '').trim();
+    // Never reuse the legacy S3_READ_API_KEY after its disclosure.
+    return String(env.LOCAL_SOUND_S3_READ_API_KEY || '').trim();
 }
 
 function getSafeS3ErrorCode(value) {
@@ -482,6 +481,7 @@ async function resolvePlaybackUrl({ rowId, userJwt, config, env = process.env, d
         if ([401, 403, 404].includes(getErrorStatus(err))) {
             throw createPlaybackError('Song is not available for playback.', 404);
         }
+        err.playbackStage = 'row-read';
         throw err;
     }
 
@@ -498,6 +498,7 @@ async function resolvePlaybackUrl({ rowId, userJwt, config, env = process.env, d
         if ([401, 403, 404].includes(getErrorStatus(err))) {
             throw createPlaybackError('Song is not available for playback.', 404);
         }
+        err.playbackStage = 'file-read';
         throw err;
     }
 
@@ -517,10 +518,13 @@ async function resolvePlaybackUrl({ rowId, userJwt, config, env = process.env, d
         };
     }
 
-    const endpoint = getPlaybackS3Endpoint(
-        config.APPWRITE_FUNCTION_API_ENDPOINT,
-        env.APPWRITE_S3_ENDPOINT
-    );
+    let endpoint;
+    try {
+        endpoint = getPlaybackS3Endpoint(config.APPWRITE_FUNCTION_API_ENDPOINT, env.APPWRITE_S3_ENDPOINT);
+    } catch (err) {
+        err.playbackStage = 's3-endpoint';
+        throw err;
+    }
     const signingClient = new ClientCtor()
         .setEndpoint(config.APPWRITE_FUNCTION_API_ENDPOINT)
         .setProject(config.APPWRITE_FUNCTION_PROJECT_ID)
@@ -534,8 +538,21 @@ async function resolvePlaybackUrl({ rowId, userJwt, config, env = process.env, d
             QueryApi.limit(2)
         ]
     });
-    const matchingFilesResponse = await listFilesByNameAndFolder();
-    const objectKey = getUniquePlaybackObjectKey(file, matchingFilesResponse?.files);
+    let objectKey;
+    try {
+        const matchingFilesResponse = await listFilesByNameAndFolder();
+        objectKey = getUniquePlaybackObjectKey(file, matchingFilesResponse?.files);
+    } catch (err) {
+        const upstreamStatus = getErrorStatus(err);
+        if (upstreamStatus === 401 || upstreamStatus === 403) {
+            const credentialError = createPlaybackError('S3 read key is invalid or lacks Storage read scope.', 503);
+            credentialError.playbackStage = 's3-file-lookup';
+            credentialError.upstreamStatus = upstreamStatus;
+            throw credentialError;
+        }
+        err.playbackStage = 's3-file-lookup';
+        throw err;
+    }
 
     const s3 = new S3ClientCtor({
         endpoint,
@@ -546,11 +563,17 @@ async function resolvePlaybackUrl({ rowId, userJwt, config, env = process.env, d
             secretAccessKey: readApiKey
         }
     });
-    const url = await signUrl(
-        s3,
-        new GetObjectCommandCtor({ Bucket: config.LOCAL_SOUND_BUCKET_ID, Key: objectKey }),
-        { expiresIn: PLAYBACK_URL_TTL_SECONDS }
-    );
+    let url;
+    try {
+        url = await signUrl(
+            s3,
+            new GetObjectCommandCtor({ Bucket: config.LOCAL_SOUND_BUCKET_ID, Key: objectKey }),
+            { expiresIn: PLAYBACK_URL_TTL_SECONDS }
+        );
+    } catch (err) {
+        err.playbackStage = 's3-signing';
+        throw err;
+    }
 
     return {
         success: true,
@@ -577,6 +600,9 @@ async function handlePlaybackUrl({ req, res, body, config, log, error, dependenc
         return res.json(result);
     } catch (err) {
         const status = getErrorStatus(err) || 502;
+        const stage = /^[a-z][a-z0-9-]{0,39}$/.test(String(err?.playbackStage || '')) ? err.playbackStage : '';
+        const upstream = Number(err?.upstreamStatus);
+        const upstreamStatus = Number.isInteger(upstream) && upstream >= 100 && upstream <= 599 ? upstream : 0;
         const response = status === 400
             ? { status: 400, message: 'A valid song rowId is required.' }
             : status === 404
@@ -584,16 +610,23 @@ async function handlePlaybackUrl({ req, res, body, config, log, error, dependenc
                 : status === 409
                     ? { status: 409, message: 'This song has an ambiguous S3 object key. Rename duplicate Storage files before playback.' }
                     : status === 503
-                        ? { status: 503, message: 'Playback signing is not configured.' }
+                    ? { status: 503, message: err?.message === 'S3 read key is invalid or lacks Storage read scope.'
+                        ? err.message : 'Playback signing is not configured.' }
                         : { status: 502, message: 'Unable to prepare song playback.' };
         const logRecord = JSON.stringify({
             tag: 'playback-url-failed',
-            stage: 'permission-check-or-signing',
+            stage: stage || 'permission-check-or-signing',
             status: response.status,
+            upstreamStatus: upstreamStatus || undefined,
             s3Code: getErrorS3Code(err) || undefined
         });
         try { (response.status >= 500 ? error : log)?.(logRecord); } catch { }
-        return res.json({ success: false, error: response.message }, response.status);
+        return res.json({
+            success: false,
+            error: response.message,
+            ...(stage ? { stage } : {}),
+            ...(upstreamStatus ? { upstreamStatus } : {})
+        }, response.status);
     }
 }
 
@@ -656,6 +689,9 @@ async function handlePlaybackProbe({ req, res, body, config, log, error, depende
         });
     } catch (err) {
         const status = getErrorStatus(err) || 502;
+        const failureStage = /^[a-z][a-z0-9-]{0,39}$/.test(String(err?.playbackStage || '')) ? err.playbackStage : stage;
+        const upstream = Number(err?.upstreamStatus);
+        const upstreamStatus = Number.isInteger(upstream) && upstream >= 100 && upstream <= 599 ? upstream : 0;
         const response = status === 400
             ? { status: 400, message: 'A valid song rowId is required.' }
             : status === 404
@@ -663,17 +699,24 @@ async function handlePlaybackProbe({ req, res, body, config, log, error, depende
                 : status === 409
                     ? { status: 409, message: 'This song has an ambiguous S3 object key.' }
                     : status === 503
-                        ? { status: 503, message: 'Playback signing is not configured.' }
+                    ? { status: 503, message: err?.message === 'S3 read key is invalid or lacks Storage read scope.'
+                        ? err.message : 'Playback signing is not configured.' }
                         : { status: 502, message: 'Unable to diagnose song playback.' };
         const code = getErrorS3Code(err);
         const logRecord = JSON.stringify({
             tag: 'playback-range-probe-failed',
-            stage,
+            stage: failureStage,
             status: response.status,
+            upstreamStatus: upstreamStatus || undefined,
             s3Code: code || undefined
         });
         try { (response.status >= 500 ? error : log)?.(logRecord); } catch { }
-        return res.json({ success: false, error: response.message }, response.status);
+        return res.json({
+            success: false,
+            error: response.message,
+            stage: failureStage,
+            ...(upstreamStatus ? { upstreamStatus } : {})
+        }, response.status);
     }
 }
 
@@ -972,7 +1015,26 @@ async function submitNote({ tablesDB, config, runtimeUserId, hasExecutionKey, pa
         && !emailLocalPart.startsWith('.')
         && !emailLocalPart.endsWith('.')
         && !emailLocalPart.includes('..');
-    if (!runtimeUserId && !validEmail) {
+    let account = null;
+    const userJwt = getHeader(req?.headers, 'x-appwrite-user-jwt');
+    if (userJwt) {
+        try {
+            const sessionClient = new Client()
+                .setEndpoint(config.APPWRITE_FUNCTION_API_ENDPOINT)
+                .setProject(config.APPWRITE_FUNCTION_PROJECT_ID)
+                .setJWT(userJwt);
+            const verifiedAccount = await new Account(sessionClient).get();
+            if (verifiedAccount?.$id) account = verifiedAccount;
+            if (runtimeUserId && account?.$id !== runtimeUserId) {
+                log(JSON.stringify({ tag: 'submit-note-identity-mismatch' }));
+            }
+        } catch (err) {
+            // An invalid session does not turn a public note into an authenticated one.
+            log(JSON.stringify({ tag: 'submit-note-profile-unavailable', code: err?.code ?? null }));
+        }
+    }
+    const verifiedUserId = String(account?.$id || '').trim();
+    if (!verifiedUserId && !validEmail) {
         return { status: 400, body: { success: false, error: 'Vui lòng nhập email đúng định dạng.' } };
     }
 
@@ -986,33 +1048,13 @@ async function submitNote({ tablesDB, config, runtimeUserId, hasExecutionKey, pa
 
     try {
         const data = {
-            userId: runtimeUserId || 'guest',
-            userName: runtimeUserId ? '' : 'Khách',
-            userEmail: requestEmail,
+            userId: verifiedUserId || 'guest',
+            userName: verifiedUserId ? String(account.name || '').trim() : 'Khách',
+            userEmail: verifiedUserId ? String(account.email || requestEmail).trim() : requestEmail,
             message,
             status: 'new',
             adminReply: ''
         };
-        const userJwt = getHeader(req?.headers, 'x-appwrite-user-jwt');
-        if (runtimeUserId && userJwt) {
-            try {
-                const sessionClient = new Client()
-                    .setEndpoint(config.APPWRITE_FUNCTION_API_ENDPOINT)
-                    .setProject(config.APPWRITE_FUNCTION_PROJECT_ID)
-                    .setJWT(userJwt);
-                const account = await new Account(sessionClient).get();
-                if (account?.$id === runtimeUserId) {
-                    data.userName = String(account.name || '').trim();
-                    const accountEmail = String(account.email || '').trim();
-                    if (accountEmail) data.userEmail = accountEmail;
-                } else {
-                    log(JSON.stringify({ tag: 'submit-note-identity-mismatch', runtimeUserId }));
-                }
-            } catch (err) {
-                // Profile enrichment is optional and must never block submission.
-                log(JSON.stringify({ tag: 'submit-note-profile-unavailable', code: err?.code ?? null }));
-            }
-        }
 
         let row;
         try {
@@ -1037,7 +1079,7 @@ async function submitNote({ tablesDB, config, runtimeUserId, hasExecutionKey, pa
                 databaseId: config.LOCAL_SOUND_DATABASE_ID,
                 tableId: config.LOCAL_SOUND_REQUESTS_TABLE_ID,
                 hasExecutionKey,
-                guest: !runtimeUserId
+                guest: !verifiedUserId
             }));
             throw err;
         }

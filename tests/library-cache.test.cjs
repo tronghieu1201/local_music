@@ -109,9 +109,20 @@ test('old cache remains available past 72 hours until a sync replaces it', async
 
 test('cache with an unsupported version is removed so the library can recover from Appwrite', async () => {
     const { cache, storage } = loadCache({
-        key: 'public-library', version: 999, savedAt: Date.now(), songs: []
+        key: 'public-library:6ab3a652002e667289ab', version: 999, savedAt: Date.now(), songs: []
     });
 
     assert.equal(await cache.read(), null);
     assert.equal(storage.record, null);
+});
+
+test('the new project does not reuse the previous Appwrite library snapshot', async () => {
+    const { cache, storage } = loadCache({
+        key: 'public-library', version: 1, savedAt: Date.now(), songs: [
+            { id: 'old-row', rowId: 'old-row', fileId: 'old-file', title: 'Old project song', folders: [] }
+        ]
+    });
+
+    assert.equal(await cache.read(), null);
+    assert.equal(storage.record.key, 'public-library');
 });

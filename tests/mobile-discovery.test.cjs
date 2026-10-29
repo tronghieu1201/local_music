@@ -37,9 +37,9 @@ test('selected category logo and name follow folder changes and reset for For Yo
     ].map(id => [id, element()]));
     const context = vm.createContext({
         document: { getElementById(id) { return elements.get(id) || null; } },
-        CATEGORY_TAB_KEYS: ['tiktok', 'karaoke'],
-        PLAYLIST_TAB_LABELS: { tiktok: 'SoundKer', karaoke: 'Karaoke' },
-        mobileDiscoveryMode: 'category', mobileDiscoveryCategoryKey: 'tiktok',
+        CATEGORY_TAB_KEYS: ['giaitri', 'karaoke'],
+        PLAYLIST_TAB_LABELS: { giaitri: 'Giải Trí', karaoke: 'Karaoke' },
+        mobileDiscoveryMode: 'category', mobileDiscoveryCategoryKey: 'giaitri',
         updateMobileDiscoveryIndicator() {}
     });
     const productionFunction = appSource.match(/^    function updateMobileDiscoveryNav\([^]*?^    }/m);
@@ -50,7 +50,7 @@ test('selected category logo and name follow folder changes and reset for For Yo
     const label = elements.get('mobile-discovery-category-label');
     const category = elements.get('mobile-discovery-category');
     const forYou = elements.get('mobile-discovery-for-you');
-    for (const [key, name] of [['tiktok', 'SoundKer'], ['karaoke', 'Karaoke']]) {
+    for (const [key, name] of [['giaitri', 'Giải Trí'], ['karaoke', 'Karaoke']]) {
         context.mobileDiscoveryCategoryKey = key;
         context.updateMobileDiscoveryNav();
         assert.equal(label.textContent, name);

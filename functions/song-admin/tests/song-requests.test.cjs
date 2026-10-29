@@ -196,7 +196,7 @@ test('guest note submission uses Appwrite SDK execution without an account sessi
     const context = vm.createContext({
         APPWRITE_CONFIG: {
             endpoint: 'https://sgp.cloud.appwrite.io/v1',
-            projectId: '6acfc865002e5d53c738',
+            projectId: '6ab3a652002e667289ab',
             functionId: 'song-admin'
         },
         NOTE_ACTIONS: { SUBMIT: 'submit-note' },
@@ -307,6 +307,25 @@ test('signed-in user keeps the email from the Appwrite account', async () => {
     assert.equal(app.createdRows[0].data.userEmail, 'account@example.com');
 });
 
+test('an unverified user header cannot impersonate an account in a public note', async () => {
+    const app = backendHarness();
+    const result = await app.submit({ runtimeUserId: 'admin-id', email: 'guest@example.com' });
+
+    assert.equal(result.status, 200);
+    assert.equal(app.createdRows[0].data.userId, 'guest');
+    assert.equal(app.createdRows[0].data.userEmail, 'guest@example.com');
+});
+
+test('a mismatched user header cannot override the verified JWT identity', async () => {
+    const app = backendHarness();
+    app.context.sessionAccount = { $id: 'verified-id', name: 'Verified', email: 'verified@example.com' };
+    const result = await app.submit({ runtimeUserId: 'spoofed-id', userJwt: 'test-jwt', email: 'typed@example.com' });
+
+    assert.equal(result.status, 200);
+    assert.equal(app.createdRows[0].data.userId, 'verified-id');
+    assert.equal(app.createdRows[0].data.userEmail, 'verified@example.com');
+});
+
 test('admin response includes the saved email for display', () => {
     const app = backendHarness();
     const request = app.api.getRequestData({
@@ -367,6 +386,20 @@ test('stats action remains behind the server-side authenticated Admin guard', ()
     assert.equal(context.isAdmin('configured-admin', { LOCAL_SOUND_ADMIN_USER_ID: 'configured-admin' }), true);
     assert.equal(context.isAdmin('regular-user', { LOCAL_SOUND_ADMIN_USER_ID: 'configured-admin' }), false);
     assert.equal(context.isAdmin('configured-admin', {}), false);
+});
+
+test('configured Admin can list notes when the Admin team has no members', async () => {
+    const app = taskHandlersHarness({ adminId: 'configured-admin', teamId: 'empty-team' });
+    const result = await app.listNotes({
+        userId: 'configured-admin',
+        config: { LOCAL_SOUND_DATABASE_ID: 'db', LOCAL_SOUND_REQUESTS_TABLE_ID: 'song_requests' },
+        teams: { listMemberships() { throw new Error('Admin team should not be required for the configured user'); } },
+        tablesDB: { async listRows() { return { rows: [], total: 0 }; } }
+    });
+
+    assert.equal(result.status, 200);
+    assert.equal(result.body.success, true);
+    assert.equal(result.body.requests.length, 0);
 });
 
 test('stats Appwrite failures return HTTP 500 and log only controlled diagnostics', async () => {

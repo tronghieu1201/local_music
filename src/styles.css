@@ -18,36 +18,36 @@
     --weight-semibold: 600;
     --weight-bold: 700;
 
-    /* ===== SOUNDKER: VIOLET ACCENTS ON WHITE GLASS ===== */
+    /* ===== SOUNDKER: ORANGE ACCENTS ON WHITE GLASS ===== */
     /* Backgrounds */
-    --bg: #FAF9FF;
+    --bg: #FFFAF6;
     --surface: #FFFFFF;
-    --surface-hover: #FAF9FF;
+    --surface-hover: #FFF5EE;
 
     /* Accent Color - Màu nhấn duy nhất */
-    --accent: #8B5CF6;
-    --accent-rgb: 139, 92, 246;
-    --accent-selected: #6D28D9;
-    --accent-selected-rgb: 109, 40, 217;
-    --accent-soft: #EDE9FE;
+    --accent: #FF6600;
+    --accent-rgb: 255, 102, 0;
+    --accent-selected: #B34700;
+    --accent-selected-rgb: 179, 71, 0;
+    --accent-soft: #FFE8D6;
     --accent-hover: var(--accent-selected);
-    --accent-light: #EDE9FE;
-    --accent-ink: var(--accent-selected);
+    --accent-light: #FFF0E6;
+    --accent-ink: #A63F00;
     --accent-alpha: rgba(var(--accent-rgb), 0.08);
 
     /* Text Colors - WCAG AA (4.5:1 minimum) */
-    --text: #282431;
-    --text-muted: #625C6D;
+    --text: #2E251F;
+    --text-muted: #6D5E55;
     --text-dim: var(--text-muted);
-    --text-on-accent: #100D17;
+    --text-on-accent: #241309;
     --text-on-selected: #FFFFFF;
     /* Dark labels on accent; white labels on the deeper selected fill. */
 
     /* Borders & Dividers */
-    --border: #E3DFE9;
-    --border-dark: #9A90A7;
-    --track: #E9E5EE;
-    --disabled-bg: #ECE9F0;
+    --border: #EADFD7;
+    --border-dark: #A9978D;
+    --track: #EEE1D8;
+    --disabled-bg: #F1E9E3;
     --danger: #963C36;
     --danger-bg: #F5EAE8;
     --success: #285C49;
@@ -285,10 +285,6 @@ body {
 
 .icon-cat.icon-karaoke {
     background-image: url("../assets/logo/karaoke.webp");
-}
-
-.icon-cat.icon-tiktok {
-    background-image: url("../assets/logo/leaf.webp");
 }
 
 .icon-cat.icon-giaitri,
@@ -2016,7 +2012,7 @@ textarea:disabled {
     pointer-events: none;
     align-items: center;
     justify-content: center;
-    background: rgba(42, 32, 58, 0.32);
+    background: rgba(36, 19, 9, 0.32);
 }
 
 .modal.active {
@@ -2309,7 +2305,7 @@ textarea:disabled {
     height: 100%;
     width: 0;
     border-radius: inherit;
-    background: linear-gradient(90deg, var(--primary), #a78bfa);
+    background: linear-gradient(90deg, var(--primary), var(--accent));
 
 }
 
@@ -4630,7 +4626,7 @@ kbd {
 .btn-mode-cycle.mode-shuffle {
     color: var(--accent-ink);
     border-color: var(--accent);
-    background: rgba(204, 134, 209, 0.1);
+    background: rgba(var(--accent-rgb), 0.1);
 }
 
 .btn-mode-cycle.mode-sequential {
@@ -5101,7 +5097,7 @@ kbd {
     border: 1px dashed var(--border-dark);
     border-radius: 12px;
     color: var(--text-muted);
-    background: #FAF9FC;
+    background: #FFFAF6;
     line-height: 1.6;
 }
 
@@ -5630,7 +5626,7 @@ textarea:disabled {
         flex: 1;
         border-radius: 99px;
         overflow: visible;
-        background: #E9E5EE;
+        background: #EEE1D8;
     }
 
     body.mobile-view-library .playlist-section:not(.hidden),
@@ -6143,21 +6139,21 @@ button:active,
 
 :root[data-theme="dark"] {
     color-scheme: dark;
-    --bg: #100D17;
-    --surface: #181320;
-    --surface-hover: #241C30;
-    --accent: #8B5CF6;
-    --accent-soft: #EDE9FE;
-    --accent-light: #2C203D;
-    --accent-ink: #EDE9FE;
+    --bg: #14110F;
+    --surface: #1F1915;
+    --surface-hover: #2B2018;
+    --accent: #FF6600;
+    --accent-soft: #FFD4B3;
+    --accent-light: #3B2416;
+    --accent-ink: #FFB27D;
     --accent-alpha: rgba(var(--accent-rgb), 0.12);
-    --text: #F4EFFA;
-    --text-muted: #C2B8CF;
+    --text: #FAF4EF;
+    --text-muted: #C7B7AB;
     --text-dim: var(--text-muted);
-    --border: #352B43;
-    --border-dark: #756781;
-    --track: #4E405E;
-    --disabled-bg: #261F30;
+    --border: #45342A;
+    --border-dark: #8D7060;
+    --track: #5C4433;
+    --disabled-bg: #2B221D;
     --danger: #FFB4AE;
     --danger-bg: #3A2026;
     --success: #A6D9BC;
@@ -6662,20 +6658,20 @@ body.mobile-view-for-you .now-playing-card .track-header h2,
 :root {
     --glass-surface-strong: #FFFFFF;
     --glass-surface: #FFFFFF;
-    --glass-surface-soft: #FAF9FF;
+    --glass-surface-soft: #FFFAF6;
     --glass-row: #FFFFFF;
-    --glass-hover: #EDE9FE;
+    --glass-hover: #FFF0E6;
     --glass-border: rgba(255, 255, 255, 0.86);
-    --glass-shadow: 0 14px 36px rgba(40, 36, 49, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.78);
+    --glass-shadow: 0 14px 36px rgba(46, 37, 31, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.78);
     --glass-blur: blur(18px) saturate(110%);
 }
 
 :root[data-theme="dark"] {
-    --glass-surface-strong: #24212C;
-    --glass-surface: #1B1822;
-    --glass-surface-soft: #28242F;
-    --glass-row: #211D29;
-    --glass-hover: #2C203D;
+    --glass-surface-strong: #2B2420;
+    --glass-surface: #211B17;
+    --glass-surface-soft: #302620;
+    --glass-row: #271F1A;
+    --glass-hover: #3B2416;
     --glass-border: rgba(255, 255, 255, 0.14);
     --glass-shadow: 0 16px 42px rgba(0, 0, 0, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.07);
 }
@@ -6686,13 +6682,13 @@ body.mobile-view-for-you .now-playing-card .track-header h2,
         --glass-surface: rgba(255, 255, 255, 0.62);
         --glass-surface-soft: rgba(255, 255, 255, 0.48);
         --glass-row: rgba(255, 255, 255, 0.32);
-        --glass-hover: rgba(237, 233, 254, 0.68);
+        --glass-hover: rgba(255, 240, 230, 0.68);
     }
 
     :root[data-theme="dark"] {
-        --glass-surface-strong: rgba(36, 33, 44, 0.82);
-        --glass-surface: rgba(27, 24, 34, 0.72);
-        --glass-surface-soft: rgba(40, 36, 47, 0.56);
+        --glass-surface-strong: rgba(43, 36, 32, 0.82);
+        --glass-surface: rgba(33, 27, 23, 0.72);
+        --glass-surface-soft: rgba(48, 38, 32, 0.56);
         --glass-row: rgba(255, 255, 255, 0.045);
         --glass-hover: rgba(var(--accent-selected-rgb), 0.24);
     }
@@ -6858,7 +6854,7 @@ body::after {
     border-color: var(--glass-border);
 }
 
-/* Selected controls share a solid violet fill and readable white labels. */
+/* Selected controls share a solid orange fill and readable white labels. */
 .nav-item.active,
 body.mobile-view-library .nav-item.active,
 .folder-item.active,

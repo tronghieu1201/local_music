@@ -3,7 +3,7 @@
     const DATABASE_NAME = 'localsound-public-library';
     const DATABASE_VERSION = 1;
     const STORE_NAME = 'snapshots';
-    const SNAPSHOT_KEY = 'public-library';
+    const SNAPSHOT_KEY = 'public-library:6ab3a652002e667289ab';
     const SNAPSHOT_VERSION = 1;
     let databasePromise = null;
 
