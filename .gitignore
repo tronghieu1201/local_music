@@ -1,0 +1,54 @@
+# =========================
+# PYTHON
+# =========================
+__pycache__/
+*.pyc
+
+# =========================
+# IDE / EDITOR
+# =========================
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# =========================
+# LOCAL MUSIC DATA
+# =========================
+data/
+*.mp3
+song-admin.tar.gz
+
+# =========================
+# AI DEVELOPMENT TOOLS
+# =========================
+.agent/
+.agents/
+.claude/
+.codex/
+.impeccable/
+
+# =========================
+# AI PROJECT DOCUMENTATION
+# =========================
+PRODUCT.md
+
+# =========================
+# LOCAL CONFIGURATION
+# =========================
+run.bat
+appwrite.config.json
+
+# =========================
+# ENVIRONMENT / SECRETS
+# =========================
+.env
+.env.*
+!.env.example
+
+# =========================
+# DEPENDENCIES / TEMP FILES
+# =========================
+node_modules/
+coverage/
+*.log

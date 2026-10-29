@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SoundKer - Trình Nghe Nhạc</title>
+    <link id="site-favicon" rel="icon" type="image/webp" href="assets/logo/white.webp">
+    <script src="src/theme.js"></script>
+    <link rel="stylesheet" href="src/styles.css">
+    <!-- Lucide + Morphicons icon system (ESM module, loaded before app.js) -->
+    <script type="module" src="src/icons.js"></script>
+</head>
+
+<body class="mobile-view-for-you">
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="brand" id="brand-home-btn" role="button" tabindex="0" title="Về trang chủ (Tất cả bài hát)">
+                <div class="logo-icon">
+                    <img src="assets/logo/white.webp" alt="SoundKer Logo" class="brand-logo-img">
+                </div>
+                <div class="brand-text">
+                    <h1>SoundKer</h1>
+                    <span class="badge">Ker Pro</span>
+                </div>
+            </div>
+
+            <nav class="nav-menu">
+                <button class="nav-item active" data-tab="all">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 18V5l12-2v13"></path>
+                        <circle cx="6" cy="18" r="3"></circle>
+                        <circle cx="18" cy="16" r="3"></circle>
+                    </svg>
+                    <span>Tất Cả Bài Hát</span>
+                    <span class="count-badge" id="total-count">0</span>
+                </button>
+                <button class="nav-item" data-tab="unfiled">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"></path>
+                        <path d="M9 13h6"></path>
+                    </svg>
+                    <span>Bài Hát Chưa Chọn</span>
+                    <span class="count-badge" id="unfiled-count">0</span>
+                </button>
+                <button class="nav-item" data-tab="nhacdo">
+                    <span class="icon-cat icon-nhacdo"></span>
+                    <span>Nhạc Đỏ</span>
+                    <span class="count-badge" id="nhacdo-count">0</span>
+                </button>
+                <button class="nav-item" data-tab="karaoke">
+                    <span class="icon-cat icon-karaoke"></span>
+                    <span>Karaoke</span>
+                    <span class="count-badge" id="karaoke-count">0</span>
+                </button>
+                <button class="nav-item" data-tab="tiktok">
+                    <span class="icon-cat icon-tiktok"></span>
+                    <span>SoundKer</span>
+                    <span class="count-badge" id="tiktok-count">0</span>
+                </button>
+                <button class="nav-item" data-tab="wedding">
+                    <span class="icon-cat icon-wedding"></span>
+                    <span>Wedding</span>
+                    <span class="count-badge" id="wedding-count">0</span>
+                </button>
+                <button class="nav-item" data-tab="giaitri">
+                    <span class="icon-cat icon-giaitri"></span>
+                    <span>Giải Trí</span>
+                    <span class="count-badge" id="giaitri-count">0</span>
+                </button>
+                <button class="nav-item" data-tab="cooking">
+                    <span class="icon-cat icon-cooking"></span>
+                    <span>Nấu Ăn</span>
+                    <span class="count-badge" id="cooking-count">0</span>
+                </button>
+                <button class="nav-item" data-tab="sleep">
+                    <span class="icon-cat icon-sleep"></span>
+                    <span>Đi Ngủ</span>
+                    <span class="count-badge" id="sleep-count">0</span>
+                </button>
+                <button class="nav-item" data-tab="note">
+                    <span class="icon-cat icon-note"></span>
+                    <span>Ghi Chú</span>
+                </button>
+                <button class="nav-item" data-tab="recent">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12 6 12 12 16 14"></polyline>
+                    </svg>
+                    <span>Vừa Nghe Gần Đây</span>
+                </button>
+                <button class="nav-item settings-nav-item" id="settings-open-btn" type="button" title="Cài đặt" aria-haspopup="dialog" aria-controls="mobile-settings-modal">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path>
+                        <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                    <span>Cài đặt</span>
+                </button>
+            </nav>
+
+            <div class="sidebar-section admin-sidebar-section hidden" id="admin-sidebar-section">
+                <h3>QUẢN TRỊ</h3>
+                <button class="folder-item hidden" id="management-data-btn" type="button">
+                    <span class="sidebar-icon-container" id="sidebar-database-icon"></span> Quản lý data
+                </button>
+                <button class="folder-item hidden" id="admin-notes-btn" type="button">
+                    <span class="sidebar-icon-container" id="sidebar-notes-icon"></span>
+                    <span>Nhận note</span>
+                    <span class="count-badge hidden" id="admin-notes-count">0</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Header Bar -->
+            <header class="top-header">
+                <nav class="mobile-discovery-nav" id="mobile-discovery-nav" aria-label="Khám phá bài hát">
+                    <span class="mobile-discovery-indicator" id="mobile-discovery-indicator" aria-hidden="true"></span>
+                    <button class="mobile-discovery-tab active" id="mobile-discovery-for-you" type="button" aria-pressed="true">
+                        Dành cho bạn
+                    </button>
+                    <div class="mobile-discovery-category-wrap">
+                        <button class="mobile-discovery-tab" id="mobile-discovery-category" type="button" aria-expanded="false" aria-controls="mobile-discovery-category-menu" aria-pressed="false">
+                            <span id="mobile-discovery-category-icon" class="icon-cat hidden" aria-hidden="true"></span>
+                            <span id="mobile-discovery-category-label">Danh mục</span>
+                        </button>
+                        <div class="mobile-discovery-category-menu hidden" id="mobile-discovery-category-menu" role="menu" aria-label="Chọn danh mục"></div>
+                    </div>
+                </nav>
+                <div class="search-box mobile-search-collapsed" id="search-box">
+                    <button class="search-toggle-btn" id="search-toggle-btn" type="button" aria-label="Mở tìm kiếm" aria-expanded="false" title="Mở tìm kiếm">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        </svg>
+                    </button>
+                    <input type="text" id="search-input" placeholder="Tìm kiếm bài hát...">
+                    <button id="clear-search" class="hidden">&times;</button>
+                    <div id="search-results-dropdown" class="search-results-dropdown hidden"></div>
+                </div>
+
+                <div class="header-actions">
+                    <button class="btn-icon header-timer-btn" id="timer-toggle-btn" title="Hẹn giờ tắt nhạc">
+                        <span id="timer-icon-container" class="header-icon-container"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg></span>
+                        <span id="timer-badge-text" class="timer-badge-text hidden">15m</span>
+                    </button>
+                    <button class="btn-icon" id="shortcut-help-btn" title="Hướng dẫn phím tắt">
+                        <span id="shortcut-icon-container" class="header-icon-container"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="m13 2-9 12h7l-1 8 10-13h-7Z"></path></svg></span>
+                    </button>
+                    <button class="btn-icon" id="refresh-page-btn" type="button" title="Làm mới trang (Ctrl+Shift+5)" aria-label="Làm mới trang">
+                        <span id="refresh-icon-container" class="header-icon-container"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M3 3v6h6m12 12v-6h-6M3 9a9 9 0 0 1 15-4l3 4M3 15l3 4a9 9 0 0 0 15-4"></path></svg></span>
+                    </button>
+                    <button class="btn-icon theme-toggle" id="theme-toggle-btn" type="button" title="Chuyển sang giao diện tối" aria-label="Giao diện tối" aria-pressed="false">
+                        <svg class="theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.9 13A9 9 0 0 1 11 3.1 9 9 0 1 0 20.9 13Z"></path></svg>
+                        <svg class="theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Center Stage Player -->
+            <section class="player-stage">
+                <div class="visualizer-container">
+                    <canvas id="visualizer-canvas"></canvas>
+                    <div class="visualizer-icon-layer" id="visualizer-icon-layer" aria-hidden="true">
+                        <span class="visualizer-icon" data-visualizer-icon="music"></span>
+                        <span class="visualizer-icon" data-visualizer-icon="mic-vocal"></span>
+                        <span class="visualizer-icon" data-visualizer-icon="guitar"></span>
+                        <span class="visualizer-icon" data-visualizer-icon="clef-treble"></span>
+                        <span class="visualizer-icon" data-visualizer-icon="clef-bass"></span>
+                        <span class="visualizer-icon" data-visualizer-icon="music-2"></span>
+                        <span class="visualizer-icon" data-visualizer-icon="music-3"></span>
+                        <span class="visualizer-icon" data-visualizer-icon="music-4"></span>
+                    </div>
+                </div>
+
+                <!-- Mobile Now-Playing Card: Icon (left) + Title & Tags (right) + Waveform -->
+                <div class="now-playing-card">
+                    <!-- CD-style listening avatar (WebP) -->
+                    <div class="card-avatar-wrapper" id="card-avatar-wrapper">
+                        <img id="card-listen-avatar" src="assets/logo/face.webp" alt="Listening" class="card-listen-avatar">
+                    </div>
+
+                    <div class="track-info">
+                        <p class="player-eyebrow">KER PRO</p>
+                        <div class="track-header">
+                            <h2 id="current-title">Chưa có bài hát</h2>
+                        </div>
+                        <div class="current-tags" id="current-tags"></div>
+                    </div>
+
+                    <!-- Audio Reactive Waveform Visualizer (inside card for proper flex layout) -->
+                    <div class="waveform-wrapper" id="waveform-wrapper" aria-hidden="true">
+                        <canvas id="waveform-canvas"></canvas>
+                    </div>
+                </div>
+
+                <!-- Player Controls -->
+                <div class="player-controls">
+                    <!-- Progress Bar -->
+                    <div class="progress-bar-container">
+                        <span id="current-time">00:00</span>
+                        <div class="slider-wrapper" id="progress-wrapper">
+                            <div class="seek-tooltip hidden" id="seek-tooltip">00:00</div>
+                            <span id="audio-loading-indicator" class="audio-loading-indicator hidden" role="status"
+                                aria-live="polite" aria-label="Đang tải đoạn nhạc" aria-hidden="true"></span>
+                            <input type="range" id="seek-slider" min="0" max="100" value="0" step="0.1" aria-label="Vị trí phát">
+                            <div class="slider-fill" id="seek-fill">
+                                <div class="slider-thumb"></div>
+                            </div>
+                        </div>
+                        <span id="duration-time">--:--</span>
+                    </div>
+
+                    <!-- Main Buttons -->
+                    <div class="control-buttons">
+                        <!-- Consolidated Loop / Repeat / Shuffle Mode Button -->
+                        <button class="btn-mode-cycle" id="mode-cycle-btn" title="Chuyển chế độ lặp">
+                            <!-- morphicons/dom: Repeat ↔ Repeat1 (ONE path, morphicons merges all sub-elements) -->
+                            <span id="mode-icon-container" class="mode-icon-svg">
+                                <svg id="mode-repeat-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18"
+                                    height="18" aria-hidden="true">
+                                    <path id="mode-path" d="m17 2 4 4-4 4M3 11V8a2 2 0 0 1 2-2h16M7 22l-4-4 4-4m14-1v3a2 2 0 0 1-2 2H3"></path>
+                                </svg>
+                                <!-- Shuffle static icon – shown only when mode=shuffle -->
+                                <span id="mode-shuffle-icon" style="display:none;line-height:0;"></span>
+                            </span>
+                            <span id="mode-label">Tắt</span>
+                        </button>
+
+                        <div class="play-group">
+                            <button class="btn-ctrl" id="seek-back-5-btn" type="button" aria-label="Tua lùi 5 giây">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                                    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <path d="M4 7V3m0 0h4M4 3l3.1 3.1A8 8 0 1 1 5 14"></path>
+                                    <text x="12" y="15" text-anchor="middle" fill="currentColor" stroke="none"
+                                        font-size="8" font-weight="700">5</text>
+                                </svg>
+                            </button>
+                            <button class="btn-ctrl" id="prev-btn" title="Bài trước đó (P)">
+                                <!-- SkipBack – static Lucide icon -->
+                                <span id="prev-icon-container"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m19 20-9-8 9-8ZM5 19V5"></path></svg></span>
+                            </button>
+                            <button class="btn-play" id="play-btn" title="Phát / Tạm dừng (Space)">
+                                <!-- ONE persistent path — morphicons writes to this -->
+                                <svg id="play-pause-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20"
+                                    height="20" aria-hidden="true">
+                                    <path id="pp-path" d="m6 3 15 9-15 9Z"></path>
+                                </svg>
+                            </button>
+                            <button class="btn-ctrl" id="next-btn" title="Bài tiếp theo (N)">
+                                <!-- SkipForward – static Lucide icon -->
+                                <span id="next-icon-container"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 4 9 8-9 8ZM19 5v14"></path></svg></span>
+                            </button>
+                            <button class="btn-ctrl" id="seek-forward-5-btn" type="button" aria-label="Tua tới 5 giây">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                                    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <path d="M20 7V3m0 0h-4m4 0-3.1 3.1A8 8 0 1 0 19 14"></path>
+                                    <text x="12" y="15" text-anchor="middle" fill="currentColor" stroke="none"
+                                        font-size="8" font-weight="700">5</text>
+                                </svg>
+                            </button>
+                        </div>
+
+                        <!-- 3-Dots More Options Button -->
+                        <button class="btn-player-more" id="btn-player-more" title="Tùy chọn thêm">
+                            ⋮
+                        </button>
+                    </div>
+
+                    <!-- Volume Control -->
+                    <div class="volume-container">
+                        <button class="btn-icon-small" id="mute-btn" title="Tắt tiếng (M)">
+                            <!-- ONE persistent path — morphicons writes to this -->
+                            <svg id="vol-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round" width="20" height="20"
+                                aria-hidden="true">
+                                <path id="vol-path" d="m11 5-6 4H2v6h3l6 4ZM15 9a5 5 0 0 1 0 6M18 6a9 9 0 0 1 0 12"></path>
+                            </svg>
+                        </button>
+                        <div class="slider-wrapper volume-wrapper">
+                            <input type="range" id="volume-slider" min="0" max="1" value="0.8" step="0.01" aria-label="Âm lượng">
+                            <div class="slider-fill" id="volume-fill"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Song Playlist Panel -->
+            <section class="playlist-section">
+                <div class="playlist-header">
+                    <div class="playlist-title">
+                        <div class="playlist-heading-group">
+                            <span id="current-playlist-icon" class="playlist-heading-icon icon-cat hidden" aria-hidden="true"></span>
+                            <h2 id="current-playlist-heading">Tất Cả Bài Hát (A - Z)</h2>
+                        </div>
+                        <span id="playlist-count">0 bài</span>
+                    </div>
+                    <div class="playlist-sort">
+                        <button id="reset-folder-btn" class="btn-reset-folder hidden" type="button"
+                            title="Đặt lại toàn bộ bài hát trong folder này (Chỉ Admin)">
+                            Đặt lại
+                        </button>
+                        <select id="sort-select" aria-label="Sắp xếp bài hát">
+                            <option value="title-asc">Tên (A - Z)</option>
+                            <option value="title-desc">Tên (Z - A)</option>
+                            <option value="size-desc">Dung lượng giảm dần</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="song-list" id="song-list">
+                    <div class="loading-spinner">Đang tải danh sách bài hát...</div>
+                </div>
+            </section>
+
+            <!-- Song Requests Section -->
+            <section class="notes-section hidden" id="notes-section">
+                <div class="notes-header">
+                    <h2>BẠN THÍCH NGHE GÌ?</h2>
+                    <span id="note-request-auth-status" class="note-request-auth-status hidden"></span>
+                </div>
+
+                <div class="notes-body">
+                    <div class="notes-unified-container request-notes-container">
+                        <form id="song-request-form" class="song-request-form" novalidate>
+                            <label class="notes-sub-header" for="song-request-message">Nội dung yêu cầu</label>
+                            <textarea id="song-request-message" maxlength="2000"
+                                class="notes-textarea song-request-textarea"
+                                placeholder="Hãy ghi bài hát bạn thích nghe hay một vấn đề gì đó gửi về tôi..."></textarea>
+                            <div id="song-request-email-step" class="song-request-email-step hidden">
+                                <label class="notes-sub-header" for="song-request-email">Email của bạn</label>
+                                <input id="song-request-email" class="song-request-email-input" type="email"
+                                    maxlength="254" autocomplete="email" inputmode="email"
+                                    placeholder="name@example.com">
+                            </div>
+                            <div class="song-request-form-footer">
+                                <span id="song-request-limit" class="song-request-limit">0/2000</span>
+                                <button id="submit-song-request" class="btn-add-checklist" type="submit">Gửi</button>
+                            </div>
+                            <p id="song-request-status" class="song-request-status-message hidden" role="status"
+                                aria-live="polite"></p>
+                        </form>
+
+                        <div class="song-request-history">
+                            <h3 class="notes-sub-header">NHỮNG NỘI DUNG ĐÃ GỬI</h3>
+                            <div id="song-request-list" class="song-request-list">
+                                <p class="song-request-empty">Bạn chưa gửi yêu cầu nào.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Sleep Timer Modal -->
+    <div class="modal" id="timer-modal">
+        <div class="modal-content small">
+            <div class="modal-header">
+                <h3>Hẹn Giờ Tắt Nhạc</h3>
+                <button class="close-btn" id="close-timer">&times;</button>
+            </div>
+            <div class="modal-body text-center">
+                <div class="timer-options">
+                    <button class="timer-btn" data-time="15">15 Phút</button>
+                    <button class="timer-btn" data-time="20">20 Phút</button>
+                    <button class="timer-btn" data-time="30">30 Phút</button>
+                    <button class="timer-btn" data-time="45">45 Phút</button>
+                    <button class="timer-btn" data-time="60">60 Phút</button>
+                </div>
+
+                <div class="custom-timer-section">
+                    <label for="custom-timer-input">Tự nhập thời gian (phút):</label>
+                    <div class="custom-timer-group">
+                        <input type="number" id="custom-timer-input" min="1" max="720" placeholder="VD: 25">
+                        <button id="custom-timer-submit" class="timer-submit-btn">Kích hoạt</button>
+                    </div>
+                </div>
+
+                <div class="timer-cancel-container">
+                    <button class="timer-btn danger" data-time="0">Tắt Hẹn Giờ</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Keyboard Shortcuts Modal -->
+    <div class="modal" id="shortcut-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>⌨️ Phím Tắt Bàn Phím</h3>
+                <button class="close-btn" id="close-shortcut">&times;</button>
+            </div>
+            <div class="modal-body">
+                <ul class="shortcut-list">
+                    <li><kbd>Space</kbd> <span>Phát / Tạm dừng</span></li>
+                    <li><kbd>&larr;</kbd> / <kbd>&rarr;</kbd> <span>Tua lùi / tiến 5 giây</span></li>
+                    <li><kbd>&uarr;</kbd> / <kbd>&darr;</kbd> <span>Tăng / giảm 10% âm lượng</span></li>
+                    <li><kbd>N</kbd> <span>Chuyển sang bài tiếp theo</span></li>
+                    <li><kbd>P</kbd> <span>Quay lại bài trước đó</span></li>
+                    <li><kbd>M</kbd> <span>Bật / Tắt tiếng</span></li>
+                    <li><kbd>/</kbd> <span>Tập trung vào ô tìm kiếm</span></li>
+                    <li><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>5</kbd> <span>Làm mới trang</span></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirmation Dialog Modal -->
+    <div class="modal" id="confirm-modal">
+        <div class="modal-content small">
+            <div class="modal-header">
+                <h3 id="confirm-modal-title">⚠️ Xác nhận</h3>
+                <button class="close-btn" id="close-confirm">&times;</button>
+            </div>
+            <div class="modal-body text-center">
+                <p id="confirm-modal-message"
+                    style="margin-bottom: 24px; line-height: 1.5; color: var(--text-main); font-size: 0.95rem; text-align: left;">
+                </p>
+                <div class="confirm-modal-actions" style="display: flex; gap: 10px; justify-content: flex-end;">
+                    <button id="confirm-modal-cancel" class="btn-secondary"
+                        style="padding: 10px 18px; border-radius: var(--radius-sm); border: 1px solid var(--border-glass); background: rgba(255,255,255,0.08); color: var(--text-main); cursor: pointer; font-weight: 500;">Hủy</button>
+                    <button id="confirm-modal-ok" class="btn-primary"
+                        style="padding: 10px 18px; border-radius: var(--radius-sm); border: none; background: var(--gradient-accent); color: #fff; cursor: pointer; font-weight: 600;">Xác
+                        nhận</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Branded song rename dialog -->
+    <div class="modal" id="rename-song-modal" role="dialog" aria-modal="true" aria-labelledby="rename-song-title">
+        <div class="modal-content small">
+            <div class="modal-header">
+                <h3 id="rename-song-title">Đổi tên bài hát</h3>
+                <button class="close-btn" id="close-rename-song" type="button" aria-label="Đóng">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="rename-song-form" class="auth-form rename-song-form" novalidate>
+                    <label for="rename-song-input">Tên bài hát</label>
+                    <input id="rename-song-input" type="text" maxlength="160" autocomplete="off" aria-required="true">
+                    <p id="rename-song-error" class="auth-error hidden" role="alert"></p>
+                    <div class="rename-song-actions">
+                        <button class="btn-secondary" id="cancel-rename-song" type="button">Hủy</button>
+                        <button class="btn-primary" type="submit">Lưu tên</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Login Modal -->
+    <div class="modal" id="auth-modal" role="dialog" aria-modal="true" aria-labelledby="auth-modal-title">
+        <div class="modal-content small">
+            <div class="modal-header">
+                <h3 id="auth-modal-title">Đăng nhập</h3>
+                <button class="close-btn" id="close-auth" type="button" aria-label="Đóng đăng nhập">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="admin-login-form" class="auth-form" novalidate>
+                    <label for="admin-email">Email</label>
+                    <input id="admin-email" type="email" autocomplete="username" required>
+                    <label for="admin-password">Mật khẩu</label>
+                    <input id="admin-password" type="password" autocomplete="current-password" required>
+                    <p id="auth-error" class="auth-error hidden"></p>
+                    <button class="auth-submit-btn" type="submit">Đăng nhập</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Upload -->
+    <div class="modal" id="upload-placeholder-modal">
+        <div class="modal-content small">
+            <div class="modal-header">
+                <h3>Upload bài hát</h3>
+                <button class="close-btn" id="close-upload-placeholder" type="button">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form class="auth-form upload-form" id="admin-upload-form">
+                    <label for="admin-upload-file">Chọn bài hát MP3</label>
+                    <input id="admin-upload-file" type="file" accept=".mp3,audio/mpeg" multiple required
+                        aria-describedby="admin-upload-hint">
+                    <p class="upload-file-meta" id="admin-upload-hint">Tối đa 15 bài mỗi lượt, 50 MB mỗi bài. Tên bài
+                        hát được lấy từ tên file.</p>
+                    <p class="upload-file-meta hidden" id="admin-upload-file-meta"></p>
+                    <ul class="upload-file-list hidden" id="admin-upload-file-list"
+                        aria-label="Danh sách bài hát tải lên"></ul>
+
+                    <p class="upload-status hidden" id="admin-upload-status" role="status" aria-live="polite"></p>
+                    <button class="auth-submit-btn" id="admin-upload-submit" type="submit" disabled>Upload</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Data Management -->
+    <div class="modal" id="management-data-modal">
+        <div class="modal-content management-data-modal-content">
+            <div class="modal-header">
+                <h3>Quản lý dữ liệu</h3>
+                <button class="close-btn" id="close-management-data" type="button">&times;</button>
+            </div>
+            <div class="modal-body management-data-body">
+                <section class="management-section" aria-labelledby="management-cloud-heading">
+                    <h4 class="management-section-title" id="management-cloud-heading">DỊCH VỤ ĐÁM MÂY</h4>
+                    <div class="management-stat-row">
+                        <span>Gói</span>
+                        <strong id="management-cloud-plan">Đang tải...</strong>
+                    </div>
+                    <div class="management-stat-row">
+                        <span>Bài hát trong Database</span>
+                        <strong id="management-cloud-song-count">Đang tải...</strong>
+                    </div>
+                    <div class="management-stat-row">
+                        <span>File audio trong Storage</span>
+                        <strong id="management-cloud-storage-file-count">Đang tải...</strong>
+                    </div>
+                    <div class="management-stat-row">
+                        <span>File mồ côi</span>
+                        <strong id="management-cloud-orphan-count">Đang tải...</strong>
+                    </div>
+                    <button class="btn-secondary management-orphan-cleanup-btn" id="management-orphan-cleanup-btn"
+                        type="button" disabled>
+                        Dọn file mồ côi (0)
+                    </button>
+                    <div class="management-stat-row">
+                        <span>Dung lượng Storage thực tế (bucket)</span>
+                        <strong id="management-cloud-storage">Đang tải...</strong>
+                    </div>
+                    <div class="management-stat-row management-stat-row-muted">
+                        <span>Dung lượng Database</span>
+                        <span id="management-database-size">Chưa có dữ liệu</span>
+                    </div>
+                    <div class="management-stat-row management-stat-row-muted">
+                        <span>Function deployments</span>
+                        <span id="management-function-size">Chưa có dữ liệu</span>
+                    </div>
+                    <div class="management-stat-row management-stat-row-muted">
+                        <span>Sites</span>
+                        <span id="management-sites-size">Chưa có dữ liệu</span>
+                    </div>
+                    <div class="management-stat-row">
+                        <span>Tổng dung lượng dịch vụ đám mây</span>
+                        <strong id="management-cloud-total-storage">Chưa có dữ liệu</strong>
+                    </div>
+                    <div class="management-progress-track management-cloud-usage-track" role="progressbar" aria-label="Tỷ lệ sử dụng dịch vụ đám mây"
+                        aria-valuemin="0" aria-valuemax="100" aria-valuetext="Chưa có dữ liệu">
+                        <div id="management-storage-progress" class="management-progress-bar"></div>
+                        <span class="management-progress-empty-label" id="management-storage-progress-label">Chưa có dữ liệu</span>
+                    </div>
+                    <div class="management-stat-row management-stat-row-muted">
+                        <span>Dung lượng Cloud còn lại</span>
+                        <span id="management-storage-remaining">Đang tải...</span>
+                    </div>
+                    <div class="management-stat-row management-stat-row-muted">
+                        <span>Tỷ lệ sử dụng Cloud</span>
+                        <span id="management-storage-percent">Đang tải...</span>
+                    </div>
+                    <a class="management-console-link" id="management-usage-link" href="https://cloud.appwrite.io/" target="_blank" rel="noopener noreferrer">
+                        Mở trang quản lý dung lượng
+                    </a>
+                </section>
+                <section class="management-section" aria-labelledby="management-library-heading">
+                    <h4 class="management-section-title" id="management-library-heading">THƯ VIỆN</h4>
+                    <div class="management-stat-row">
+                        <span>Số bài được gọi ra</span>
+                        <strong id="management-library-song-count">Đang tải...</strong>
+                    </div>
+                    <div class="management-stat-row">
+                        <span>Số thư mục</span>
+                        <strong id="management-library-folder-count">Đang tải...</strong>
+                    </div>
+                    <div class="management-stat-row management-stat-row-muted">
+                        <span>Dung lượng nhạc gốc</span>
+                        <span id="management-library-size">Đang tải...</span>
+                    </div>
+                </section>
+                <section class="management-section" aria-labelledby="management-diagnostics-heading">
+                    <h4 class="management-section-title" id="management-diagnostics-heading">TỔNG QUAN &amp; KẾT NỐI</h4>
+                    <div class="management-stat-row"><span>Kết nối mạng</span><strong id="diagnostics-network-status">Chưa kiểm tra</strong></div>
+                    <div class="management-stat-row"><span>API đã kiểm tra</span><strong id="diagnostics-cloud-status">Chưa kiểm tra đầy đủ</strong></div>
+                    <div class="management-stat-row"><span>Cập nhật gần nhất</span><span id="diagnostics-last-updated">Chưa có dữ liệu</span></div>
+                    <div class="management-stat-row"><span>Endpoint</span><span id="diagnostics-endpoint">Chưa có dữ liệu</span></div>
+                    <div class="management-stat-row"><span>Project ID</span><span id="diagnostics-project">Chưa có dữ liệu</span></div>
+                    <div class="management-stat-row"><span>Phiên Admin</span><strong id="diagnostics-admin-status">Chưa xác thực</strong></div>
+                    <div id="diagnostics-service-checks" class="management-diagnostics-list" role="status" aria-live="polite"></div>
+                    <button class="btn-secondary" id="management-connection-check-btn" type="button">Kiểm tra kết nối</button>
+                </section>
+                <section class="management-section" aria-labelledby="management-integrity-heading">
+                    <h4 class="management-section-title" id="management-integrity-heading">KIỂM TRA TOÀN VẸN DỮ LIỆU</h4>
+                    <p class="management-help-text">Chỉ đọc, phân trang toàn bộ Database và Storage khi Admin chủ động chạy.</p>
+                    <div class="management-integrity-actions">
+                        <button class="btn-secondary" id="management-integrity-start-btn" type="button">Kiểm tra dữ liệu đầy đủ</button>
+                        <button class="btn-secondary hidden" id="management-integrity-cancel-btn" type="button">Hủy</button>
+                    </div>
+                    <div class="management-progress-track" id="management-integrity-progress-track" role="progressbar" aria-label="Tiến trình kiểm tra toàn vẹn dữ liệu" aria-valuemin="0" aria-valuemax="100">
+                        <div id="management-integrity-progress" class="management-progress-bar"></div>
+                    </div>
+                    <p id="management-integrity-status" class="management-diagnostic-status" role="status" aria-live="polite">Chưa chạy kiểm tra.</p>
+                    <div id="management-integrity-results" class="management-diagnostics-list"></div>
+                </section>
+                <section class="management-section" aria-labelledby="management-performance-heading">
+                    <h4 class="management-section-title" id="management-performance-heading">HIỆU NĂNG PHIÊN HIỆN TẠI</h4>
+                    <div class="management-stat-row"><span>Request quan sát</span><strong id="diagnostics-request-count">0</strong></div>
+                    <div class="management-stat-row"><span>Thành công / thất bại</span><strong id="diagnostics-request-outcomes">0 / 0</strong></div>
+                    <div class="management-stat-row"><span>Request trùng đang chạy</span><strong id="diagnostics-duplicate-count">0</strong></div>
+                    <div class="management-stat-row"><span>Long tasks main thread</span><span id="diagnostics-long-tasks">Chưa có dữ liệu</span></div>
+                    <div class="management-stat-row"><span>Visualizer / FPS</span><span>Không hỗ trợ đo đáng tin cậy</span></div>
+                    <div id="diagnostics-request-groups" class="management-diagnostics-list"></div>
+                    <h5 class="management-subsection-title">Request gần đây</h5>
+                    <div id="diagnostics-recent-requests" class="management-diagnostics-list"></div>
+                    <h5 class="management-subsection-title">Đo frontend</h5>
+                    <div id="diagnostics-frontend-summary" class="management-diagnostics-list"></div>
+                    <details class="management-error-details">
+                        <summary>Lỗi gần đây</summary>
+                        <div id="diagnostics-errors" class="management-diagnostics-list"></div>
+                    </details>
+                </section>
+                <section class="management-section" aria-labelledby="management-report-heading">
+                    <h4 class="management-section-title" id="management-report-heading">BÁO CÁO KỸ THUẬT</h4>
+                    <p class="management-help-text">Báo cáo chỉ gồm số liệu quan sát và nhận định được đánh dấu riêng; không chứa token, email hoặc nội dung request.</p>
+                    <button class="btn-secondary" id="management-copy-report-btn" type="button">Sao chép báo cáo</button>
+                    <p id="management-report-status" class="management-diagnostic-status" role="status" aria-live="polite"></p>
+                </section>
+                <p id="management-stats-status" class="auth-error hidden" role="status" aria-live="polite"></p>
+                <button class="btn-secondary" id="management-refresh-btn" type="button">Làm mới</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Song Requests -->
+    <div class="modal" id="admin-notes-modal">
+        <div class="modal-content admin-notes-modal-content">
+            <div class="modal-header">
+                <h3>NHẬN NOTE</h3>
+                <button class="close-btn" id="close-admin-notes" type="button">&times;</button>
+            </div>
+            <div class="admin-notes-filters" role="tablist" aria-label="Lọc note">
+                <button class="btn-note-filter active" data-note-filter="new" type="button">Mới</button>
+                <button class="btn-note-filter" data-note-filter="seen" type="button">Đã xem</button>
+                <button class="btn-note-filter" data-note-filter="done" type="button">Hoàn thành</button>
+                <button class="btn-note-filter" data-note-filter="rejected" type="button">Từ chối</button>
+                <button class="btn-note-filter" data-note-filter="all" type="button">Tất cả</button>
+            </div>
+            <p id="admin-notes-status" class="admin-notes-status" role="status" aria-live="polite"></p>
+            <div id="admin-notes-list" class="admin-notes-list"></div>
+        </div>
+    </div>
+
+    <!-- Player 3-Dots Mobile Menu Modal -->
+    <div class="modal" id="player-more-modal">
+        <div class="modal-content small">
+            <div class="modal-header">
+                <h3>Tùy Chọn Bài Hát</h3>
+                <button class="close-btn" id="close-player-more">&times;</button>
+            </div>
+            <div class="modal-body" style="display: flex; flex-direction: column; gap: 10px;">
+                <button class="menu-option-btn" id="pm-fav-btn">
+                    <span id="pm-fav-title">Danh sách:</span> <strong id="pm-fav-label">Chưa lưu</strong>
+                </button>
+                <button class="menu-option-btn" id="pm-mode-btn">
+                    <span>Chế độ phát:</span> <strong id="pm-mode-label">Tắt</strong>
+                </button>
+                <button class="menu-option-btn" id="pm-timer-btn">
+                    <span id="pm-timer-title">Hẹn giờ tắt nhạc</span>
+                    <strong id="pm-timer-label"></strong>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Category Picker Modal (Long Press Heart Icon) -->
+    <div class="modal" id="cat-picker-modal">
+        <div class="modal-content small">
+            <div class="modal-header" style="position: relative; justify-content: center;">
+                <h3 style="text-align: center; margin: 0; width: 100%;">Đưa bài hát vào danh sách</h3>
+                <button class="close-btn" id="close-cat-picker"
+                    style="position: absolute; right: 0; top: 50%; transform: translateY(-50%);">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p id="cat-picker-song-name"
+                    style="margin-bottom: 14px; font-size: 0.9rem; color: var(--primary); font-weight: 600; text-align: center;">
+                </p>
+                <div class="cat-picker-options" id="cat-picker-options"
+                    style="display: flex; flex-direction: column; gap: 10px;">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Shared settings for desktop and mobile. -->
+    <div class="modal" id="mobile-settings-modal" role="dialog" aria-modal="true" aria-labelledby="settings-modal-title">
+        <div class="modal-content small">
+            <div class="modal-header">
+                <h3 id="settings-modal-title">Cài đặt</h3>
+                <button class="close-btn" id="close-mobile-settings" type="button" aria-label="Đóng cài đặt">&times;</button>
+            </div>
+            <div class="modal-body" style="display: flex; flex-direction: column; gap: 12px;">
+                <section class="settings-account-section" aria-label="Tài khoản">
+                    <div class="auth-controls hidden" id="auth-controls">
+                        <button class="auth-btn" id="auth-login-btn" type="button" aria-haspopup="dialog" aria-controls="auth-modal">
+                            <span class="btn-icon-svg" id="login-icon-container"></span>
+                            <span class="btn-label">Đăng nhập</span>
+                        </button>
+                        <div class="admin-session hidden" id="admin-session">
+                            <span class="admin-user-label" id="admin-user-label"></span>
+                            <button class="auth-btn" id="admin-upload-btn" type="button">
+                                <span class="btn-icon-svg" id="upload-icon-container"></span>
+                                <span class="btn-label">Upload</span>
+                            </button>
+                            <button class="auth-btn danger" id="admin-logout-btn" type="button">
+                                <span class="btn-icon-svg" id="logout-icon-container"></span>
+                                <span class="btn-label">Đăng xuất</span>
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Theme Toggle -->
+                <div class="settings-item">
+                    <div class="settings-item-info">
+                        <h4>Giao diện</h4>
+                    </div>
+                    <button class="btn-icon theme-toggle" id="mobile-theme-toggle-btn" type="button" title="Chuyển giao diện" aria-label="Chuyển giao diện" aria-pressed="false">
+                        <svg class="theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.9 13A9 9 0 0 1 11 3.1 9 9 0 1 0 20.9 13Z"></path></svg>
+                        <svg class="theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>
+                        <svg class="theme-icon-system" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="13" rx="2"></rect><path d="M8 21h8m-4-4v4"></path></svg>
+                    </button>
+                </div>
+
+                <!-- Refresh Button -->
+                <div class="settings-item">
+                    <div class="settings-item-info">
+                        <h4>Làm mới trang</h4>
+                    </div>
+                    <button class="btn-icon" id="mobile-refresh-page-btn" type="button" title="Làm mới trang" aria-label="Làm mới trang">
+                        <span id="mobile-refresh-icon-container" class="header-icon-container"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M3 3v6h6m12 12v-6h-6M3 9a9 9 0 0 1 15-4l3 4M3 15l3 4a9 9 0 0 0 15-4"></path></svg></span>
+                    </button>
+                </div>
+
+                <!-- Info Button -->
+                <div class="settings-item">
+                    <div class="settings-item-info">
+                        <h4>Thông tin</h4>
+                    </div>
+                    <button class="btn-icon" id="mobile-info-btn" type="button" title="Thông tin" aria-label="Thông tin">
+                        <span id="mobile-info-icon-container" class="header-icon-container"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg></span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Temporary data notice shown on first load unless snoozed for 24 hours. -->
+    <div class="modal" id="temporary-data-notice-modal" role="dialog" aria-modal="true" aria-labelledby="temporary-data-notice-title" aria-describedby="temporary-data-notice-message">
+        <div class="modal-content small notice-modal-content">
+            <div class="modal-header">
+                <h3 id="temporary-data-notice-title">Thông báo</h3>
+            </div>
+            <div class="modal-body">
+                <p class="notice-modal-message" id="temporary-data-notice-message">Website đang sử dụng dữ liệu tạm thời để thay thế dữ liệu gốc.</p>
+                <div class="notice-modal-actions">
+                    <button class="btn-secondary" id="temporary-data-notice-snooze" type="button">Đóng 24h</button>
+                    <button class="btn-primary" id="temporary-data-notice-close" type="button">Đóng</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Information shown from Settings on both desktop and mobile. -->
+    <div class="modal" id="temporary-data-info-modal" role="dialog" aria-modal="true" aria-labelledby="temporary-data-info-title" aria-describedby="temporary-data-info-message">
+        <div class="modal-content small notice-modal-content">
+            <div class="modal-header">
+                <h3 id="temporary-data-info-title">88888</h3>
+                <button class="close-btn" id="temporary-data-info-close" type="button" aria-label="Đóng">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="notice-modal-message" id="temporary-data-info-message">Data mp3 cũ đã bị hỏng. Hiện tại đang sử dụng data ảo tạm thời thay thế ( mang tính chất demo ).</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="pull-refresh-indicator" class="pull-refresh-indicator" role="status" aria-live="polite" aria-hidden="true">
+        <span class="pull-refresh-spinner" aria-hidden="true"></span>
+        <span id="pull-refresh-label">Kéo xuống để làm mới</span>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Floating Mobile Mini Player (Shown on "Của Tui" tab on mobile) -->
+    <div class="mobile-mini-player hidden" id="mobile-mini-player">
+        <div class="mini-player-left" id="mini-player-info">
+            <div class="mini-disc" id="mini-disc">
+                <img id="mini-img" src="assets/logo/face.webp" alt="">
+            </div>
+            <div class="mini-track-info">
+                <div class="mini-title" id="mini-title">Chưa chọn bài hát</div>
+                <div class="mini-artist" id="mini-artist">SoundKer</div>
+            </div>
+        </div>
+        <div class="mini-player-controls">
+            <button class="mini-btn-play" id="mini-play-btn" title="Phát / Tạm dừng">
+                <!-- ONE persistent path — morphicons writes to this -->
+                <svg id="mini-pp-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round" width="22" height="22" aria-hidden="true">
+                    <path id="mini-pp-path"></path>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- Mobile Bottom Navigation Bar -->
+    <nav class="mobile-bottom-nav" id="mobile-bottom-nav">
+        <button class="mobile-nav-tab active" id="mobile-tab-for-you" data-mobile-tab="for-you">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path
+                    d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z">
+                </path>
+            </svg>
+            <span>Nghe nhạc</span>
+        </button>
+        <button class="mobile-nav-tab" id="mobile-tab-library" data-mobile-tab="library">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+            <span>Thư viện</span>
+        </button>
+        <button class="mobile-nav-tab" id="mobile-tab-settings" type="button" aria-label="Cài đặt">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+            <span>Cài đặt</span>
+        </button>
+    </nav>
+
+    <!-- Hidden HTML5 Audio Element -->
+    <audio id="audio-player" preload="metadata"></audio>
+
+    <script src="https://cdn.jsdelivr.net/npm/appwrite@20.0.0"
+        onerror="this.onerror=null;this.src='https://unpkg.com/appwrite@20.0.0';"></script>
+    <script src="src/admin-diagnostics.js"></script>
+    <script src="src/admin-integrity.js"></script>
+    <script src="src/library-cache.js"></script>
+    <script src="src/app.js"></script>
+</body>
+
+</html>
