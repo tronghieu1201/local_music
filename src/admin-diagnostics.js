@@ -276,7 +276,6 @@
                 if (Number(count) > 0) lines.push(`- Dấu hiệu ${name}: ${Number(count)}.`);
             });
         }
-
         const slowGroups = (data.requestGroups || []).filter((group) => Number(group.slowest?.durationMs) >= 1500);
         lines.push('', 'Nhận định (suy luận từ số đo):');
         if (slowGroups.length) {
@@ -289,7 +288,6 @@
         lines.push('', 'Báo cáo không chứa thông tin xác thực, email, payload hoặc nội dung bài hát.');
         return lines.join('\n');
     }
-
     global.LocalSoundAdminDiagnostics = Object.freeze({
         measureRequest,
         recordFrontendTiming,

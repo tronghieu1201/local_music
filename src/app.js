@@ -130,17 +130,17 @@ document.addEventListener('DOMContentLoaded', () => {
     let isAdmin = false;
     let isNotesAdmin = false;
     let uploadQueue = [];
-    const REMOVED_CATEGORY_FOLDER_KEYS = new Set(['cloud', 'alone', 'person']);
-    const CATEGORY_TAB_KEYS = Object.freeze(['nhacdo', 'karaoke', 'wedding', 'giaitri', 'cooking', 'sleep']);
+    const REMOVED_CATEGORY_FOLDER_KEYS = new Set([
+        'cloud', 'alone', 'person',
+        'nhac do', 'nhacdo', 'di ngu', 'sleep',
+        'nau an', 'cooking', 'wedding', 'wedding-couple'
+    ]);
+    const CATEGORY_TAB_KEYS = Object.freeze(['karaoke', 'giaitri']);
     const PLAYLIST_TAB_LABELS = Object.freeze({
         all: 'Tất Cả',
         unfiled: 'Bài Hát Chưa Chọn',
-        nhacdo: 'Nhạc Đỏ',
-        cooking: 'Nấu Ăn',
         karaoke: 'Karaoke',
         giaitri: 'Giải Trí',
-        wedding: 'Wedding',
-        sleep: 'Đi Ngủ',
         recent: 'Vừa Nghe Gần Đây'
     });
 
@@ -196,7 +196,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Playback loop modes: 'off', 'one', 'sequential', 'shuffle'
     let loopMode = 'off';
 
-    // Tabs: 'all', 'karaoke', 'cooking', 'sleep', 'recent'
+    // Tabs: 'all', 'unfiled', 'karaoke', 'giaitri', 'recent'
     let currentTab = 'all';
     let currentFolder = 'all';
     let searchQuery = '';
@@ -284,12 +284,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const songListEl = document.getElementById('song-list');
     const totalCountEl = document.getElementById('total-count');
     const unfiledCountEl = document.getElementById('unfiled-count');
-    const nhacdoCountEl = document.getElementById('nhacdo-count');
-    const cookingCountEl = document.getElementById('cooking-count');
     const karaokeCountEl = document.getElementById('karaoke-count');
     const giaitriCountEl = document.getElementById('giaitri-count');
-    const weddingCountEl = document.getElementById('wedding-count');
-    const sleepCountEl = document.getElementById('sleep-count');
 
     const playlistCountEl = document.getElementById('playlist-count');
     const playlistHeadingEl = document.getElementById('current-playlist-heading');
@@ -865,6 +861,11 @@ document.addEventListener('DOMContentLoaded', () => {
             });
     }
 
+    function getVisibleFolderList(value) {
+        return normalizeFolderList(value)
+            .filter(folder => !REMOVED_CATEGORY_FOLDER_KEYS.has(normalizeFolderValue(folder)));
+    }
+
     function getRowFolders(row) {
         const hasFoldersField = Object.prototype.hasOwnProperty.call(row || {}, 'folders');
         const rawFolders = hasFoldersField
@@ -895,8 +896,7 @@ document.addEventListener('DOMContentLoaded', () => {
         ]) || fileId).trim();
         const normalizedFilename = normalizeCloudPath(rawFilename);
         const filename = normalizedFilename.split('/').pop() || fileId;
-        const folders = getRowFolders(row)
-            .filter(folder => !REMOVED_CATEGORY_FOLDER_KEYS.has(normalizeFolderValue(folder)));
+        const folders = getVisibleFolderList(getRowFolders(row));
         const isHidden = row?.active === false || row?.active === 0 || String(row?.active).toLowerCase() === 'false';
 
         return {
@@ -2685,7 +2685,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function applyLibrarySnapshot(loadedSongs) {
-        allSongs = Array.isArray(loadedSongs) ? loadedSongs : [];
+        allSongs = Array.isArray(loadedSongs)
+            ? loadedSongs.map(song => song ? { ...song, folders: getVisibleFolderList(song.folders) } : song)
+            : [];
         if (currentPlayingSong?.id) {
             const refreshedPlayingSong = allSongs.find(song => song?.id === currentPlayingSong.id);
             if (refreshedPlayingSong) Object.assign(currentPlayingSong, refreshedPlayingSong);
@@ -2813,12 +2815,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Category Management & Helper ---
     const SONG_CATEGORY_FOLDERS = Object.freeze({
-        nhacdo: 'Nhạc Đỏ',
-        cooking: 'Nấu Ăn',
         karaoke: 'Karaoke',
-        giaitri: 'Giải Trí',
-        wedding: 'Wedding',
-        sleep: 'Đi Ngủ'
+        giaitri: 'Giải Trí'
     });
 
     function normalizeFolderValue(value) {
@@ -2831,12 +2829,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const expectedKey = normalizeFolderValue(expectedFolder);
         const legacyKeys = {
-            nhacdo: ['nhacdo'],
-            cooking: ['cooking'],
             karaoke: ['karaoke'],
-            giaitri: ['giaitri', 'giai tri', 'game', 'game-over'],
-            wedding: ['wedding', 'wedding-couple'],
-            sleep: ['sleep']
+            giaitri: ['giaitri', 'giai tri', 'game', 'game-over']
         }[catName] || [];
 
         return normalizeFolderList(song.folders).some(folder => {
@@ -2847,8 +2841,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function getSongCategoriesForUI(song) {
         if (!song) return [];
-        return ['nhacdo', 'karaoke', 'giaitri', 'wedding', 'sleep', 'cooking']
-            .filter((catName) => isSongInCategory(song, catName));
+        return CATEGORY_TAB_KEYS.filter((catName) => isSongInCategory(song, catName));
     }
 
     function isSongCategoryActive(song, catName) {
@@ -2857,37 +2850,25 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function isSongUnfiled(song) {
-        return Boolean(song) && normalizeFolderList(song.folders).length === 0;
+        return Boolean(song) && getVisibleFolderList(song.folders).length === 0;
     }
 
     function updateCategoryBadges() {
         let unfiledCount = 0;
-        let nhacdoCount = 0;
-        let cookingCount = 0;
         let karaokeCount = 0;
         let giaitriCount = 0;
-        let weddingCount = 0;
-        let sleepCount = 0;
 
         getVisibleSongsForCurrentUser().forEach(song => {
             if (!song) return;
             const cats = getSongCategoriesForUI(song);
             if (isSongUnfiled(song)) unfiledCount++;
-            if (cats.includes('nhacdo')) nhacdoCount++;
-            if (cats.includes('cooking')) cookingCount++;
             if (cats.includes('karaoke')) karaokeCount++;
             if (cats.includes('giaitri')) giaitriCount++;
-            if (cats.includes('wedding')) weddingCount++;
-            if (cats.includes('sleep')) sleepCount++;
         });
 
         if (unfiledCountEl) unfiledCountEl.textContent = unfiledCount;
-        if (nhacdoCountEl) nhacdoCountEl.textContent = nhacdoCount;
-        if (cookingCountEl) cookingCountEl.textContent = cookingCount;
         if (karaokeCountEl) karaokeCountEl.textContent = karaokeCount;
         if (giaitriCountEl) giaitriCountEl.textContent = giaitriCount;
-        if (weddingCountEl) weddingCountEl.textContent = weddingCount;
-        if (sleepCountEl) sleepCountEl.textContent = sleepCount;
     }
 
     // --- Folder Navigation ---
@@ -2983,24 +2964,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (currentTab === 'unfiled') {
             currentPlaylist = currentPlaylist.filter(isSongUnfiled);
             playlistHeadingEl.textContent = 'Bài Hát Chưa Chọn';
-        } else if (currentTab === 'nhacdo') {
-            currentPlaylist = currentPlaylist.filter(s => s && getSongCategoriesForUI(s).includes('nhacdo'));
-            playlistHeadingEl.textContent = isMobile ? 'Nhạc Đỏ' : 'Danh Sách Bài Hát Nhạc Đỏ';
-        } else if (currentTab === 'cooking') {
-            currentPlaylist = currentPlaylist.filter(s => s && getSongCategoriesForUI(s).includes('cooking'));
-            playlistHeadingEl.textContent = isMobile ? 'Nấu Ăn' : 'Danh Sách Bài Hát Nấu Ăn';
         } else if (currentTab === 'karaoke') {
             currentPlaylist = currentPlaylist.filter(s => s && getSongCategoriesForUI(s).includes('karaoke'));
             playlistHeadingEl.textContent = isMobile ? 'Karaoke' : 'Danh Sách Bài Hát Karaoke';
         } else if (currentTab === 'giaitri') {
             currentPlaylist = currentPlaylist.filter(s => s && getSongCategoriesForUI(s).includes('giaitri'));
             playlistHeadingEl.textContent = isMobile ? 'Giải Trí' : 'Danh Sách Bài Hát Giải Trí';
-        } else if (currentTab === 'wedding') {
-            currentPlaylist = currentPlaylist.filter(s => s && getSongCategoriesForUI(s).includes('wedding'));
-            playlistHeadingEl.textContent = isMobile ? 'Wedding' : 'Danh Sách Bài Hát Wedding';
-        } else if (currentTab === 'sleep') {
-            currentPlaylist = currentPlaylist.filter(s => s && getSongCategoriesForUI(s).includes('sleep'));
-            playlistHeadingEl.textContent = isMobile ? 'Đi Ngủ' : 'Danh Sách Bài Hát Đi Ngủ';
         } else if (currentTab === 'recent') {
             const recentArr = Array.isArray(recentSongs) ? recentSongs : [];
             currentPlaylist = recentArr.map(id => visibleSongs.find(s => s && s.id === id)).filter(Boolean);
@@ -3033,14 +3002,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 return titleLower.includes(rawQ) || titleNorm.includes(normalizedQ);
             });
             playlistHeadingEl.textContent = `Kết quả tìm kiếm cho "${searchQuery}"`;
-        }
-
-        const playlistIcon = document.getElementById('current-playlist-icon');
-        if (playlistIcon) {
-            const showCategoryIcon = CATEGORY_TAB_KEYS.includes(currentTab) && !searchQuery.trim();
-            playlistIcon.className = showCategoryIcon
-                ? `playlist-heading-icon icon-cat icon-${currentTab}`
-                : 'playlist-heading-icon icon-cat hidden';
         }
 
         // Sort Playlist
@@ -3131,12 +3092,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         songListEl.innerHTML = '';
         const categoryNameMap = {
-            nhacdo: 'Nhạc Đỏ',
-            cooking: 'Nấu Ăn',
             karaoke: 'Karaoke',
-            giaitri: 'Giải Trí',
-            wedding: 'Wedding',
-            sleep: 'Đi Ngủ'
+            giaitri: 'Giải Trí'
         };
 
         const activeSong = getCurrentPlayingSong();
@@ -3157,20 +3114,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 displayTitle = displayTitle.replace(regex, `<span class="highlight-text">$1</span>`);
             }
 
-            const hasNhacdo = isSongCategoryActive(song, 'nhacdo');
-            const hasCooking = isSongCategoryActive(song, 'cooking');
             const hasKaraoke = isSongCategoryActive(song, 'karaoke');
             const hasGiaitri = isSongCategoryActive(song, 'giaitri');
-            const hasWedding = isSongCategoryActive(song, 'wedding');
-            const hasSleep = isSongCategoryActive(song, 'sleep');
 
             const categoryTagButtons = canEditCategories ? `
-                    <button class="cat-tag-btn ${hasNhacdo ? 'active' : ''}" data-cat="nhacdo" title="Nhạc Đỏ"><span class="icon-cat icon-nhacdo"></span></button>
                     <button class="cat-tag-btn ${hasKaraoke ? 'active' : ''}" data-cat="karaoke" title="Karaoke"><span class="icon-cat icon-karaoke"></span></button>
                     <button class="cat-tag-btn ${hasGiaitri ? 'active' : ''}" data-cat="giaitri" title="Giải Trí"><span class="icon-cat icon-giaitri"></span></button>
-                    <button class="cat-tag-btn ${hasWedding ? 'active' : ''}" data-cat="wedding" title="Wedding"><span class="icon-cat icon-wedding"></span></button>
-                    <button class="cat-tag-btn ${hasSleep ? 'active' : ''}" data-cat="sleep" title="Đi ngủ"><span class="icon-cat icon-sleep"></span></button>
-                    <button class="cat-tag-btn ${hasCooking ? 'active' : ''}" data-cat="cooking" title="Nấu ăn"><span class="icon-cat icon-cooking"></span></button>
                 ` : '';
 
             const songActions = canEditCategories ? `
@@ -4841,12 +4790,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const song = getCurrentPlayingSong();
 
         const catDisplayMap = {
-            nhacdo: { iconHtml: '<span class="icon-cat icon-nhacdo" style="margin-right: 4px;"></span>' },
-            sleep: { iconHtml: '<span class="icon-cat icon-sleep" style="margin-right: 4px;"></span>' },
-            cooking: { iconHtml: '<span class="icon-cat icon-cooking" style="margin-right: 4px;"></span>' },
             karaoke: { iconHtml: '<span class="icon-cat icon-karaoke" style="margin-right: 4px;"></span>' },
-            giaitri: { iconHtml: '<span class="icon-cat icon-giaitri" style="margin-right: 4px;"></span>' },
-            wedding: { iconHtml: '<span class="icon-cat icon-wedding" style="margin-right: 4px;"></span>' }
+            giaitri: { iconHtml: '<span class="icon-cat icon-giaitri" style="margin-right: 4px;"></span>' }
         };
 
         if (song) {
@@ -4879,6 +4824,7 @@ document.addEventListener('DOMContentLoaded', () => {
             showToast('Chỉ Admin mới được chỉnh folder bài hát.', 'warning');
             return;
         }
+        document.getElementById('player-more-modal')?.classList.remove('active');
         const modal = document.getElementById('cat-picker-modal');
         const songNameEl = document.getElementById('cat-picker-song-name');
         const optionsEl = document.getElementById('cat-picker-options');
@@ -4889,12 +4835,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (songNameEl) songNameEl.textContent = `🎵 ${song.title}`;
 
         const categories = [
-            { key: 'nhacdo', label: '<span class="icon-cat icon-nhacdo" style="margin-right: 6px;"></span> Nhạc Đỏ' },
             { key: 'karaoke', label: '<span class="icon-cat icon-karaoke" style="margin-right: 6px;"></span> Karaoke' },
             { key: 'giaitri', label: '<span class="icon-cat icon-giaitri" style="margin-right: 6px;"></span> Giải Trí' },
-            { key: 'wedding', label: '<span class="icon-cat icon-wedding" style="margin-right: 6px;"></span> Wedding' },
-            { key: 'sleep', label: '<span class="icon-cat icon-sleep" style="margin-right: 6px;"></span> Đi Ngủ' },
-            { key: 'cooking', label: '<span class="icon-cat icon-cooking" style="margin-right: 6px;"></span> Nấu Ăn' },
         ];
 
         const songCats = getSongCategoriesForUI(song);
@@ -4911,7 +4853,7 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
 
             const chk = row.querySelector('input');
-            const catCleanMap = { nhacdo: 'Nhạc Đỏ', sleep: 'Đi Ngủ', cooking: 'Nấu Ăn', karaoke: 'Karaoke', giaitri: 'Giải Trí', wedding: 'Wedding' };
+            const catCleanMap = SONG_CATEGORY_FOLDERS;
             const catCleanName = catCleanMap[cat.key] || 'danh sách';
 
             chk.addEventListener('click', (e) => {
@@ -4962,12 +4904,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         currentTags.innerHTML = '';
         const tagMap = {
-            nhacdo: '<span class="icon-cat icon-nhacdo"></span><span class="tag-label"> Nhạc Đỏ</span>',
-            cooking: '<span class="icon-cat icon-cooking"></span><span class="tag-label"> Nấu ăn</span>',
             karaoke: '<span class="icon-cat icon-karaoke"></span><span class="tag-label"> Karaoke</span>',
-            giaitri: '<span class="icon-cat icon-giaitri"></span><span class="tag-label"> Giải Trí</span>',
-            wedding: '<span class="icon-cat icon-wedding"></span><span class="tag-label"> Wedding</span>',
-            sleep: '<span class="icon-cat icon-sleep"></span><span class="tag-label"> Đi ngủ</span>'
+            giaitri: '<span class="icon-cat icon-giaitri"></span><span class="tag-label"> Giải Trí</span>'
         };
 
         const addedTags = new Set();
@@ -5098,12 +5036,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 const folderCleanMap = {
-                    nhacdo: 'Nhạc Đỏ',
-                    cooking: 'Nấu Ăn',
                     karaoke: 'Karaoke',
-                    giaitri: 'Giải Trí',
-                    wedding: 'Wedding',
-                    sleep: 'Đi Ngủ'
+                    giaitri: 'Giải Trí'
                 };
                 const folderCleanName = folderCleanMap[currentTab] || currentTab;
 
@@ -5302,26 +5236,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const hasAnyCategory = cats.length > 0;
 
             if (!hasAnyCategory) {
-                void changeSongCategory(song, 'nhacdo', false)
-                    .then(() => {
-                        showToast(`<span class="icon-cat icon-nhacdo" style="margin-right: 4px;"></span> Đã thêm bài "${song.title}" vào danh sách Nhạc Đỏ`, 'success');
-                        updateHeartUI();
-                    })
-                    .catch(error => {
-                        console.error('[LocalSound] Cloud folder update failed:', error);
-                        showToast(`Cập nhật folder thất bại: ${error?.message || 'Không rõ nguyên nhân.'}`, 'warning');
-                    });
+                openCategoryPickerModal();
             } else {
-                const catCleanMap = { nhacdo: 'Nhạc Đỏ', sleep: 'Đi Ngủ', cooking: 'Nấu Ăn', karaoke: 'Karaoke', giaitri: 'Giải Trí', wedding: 'Wedding' };
-                const priorityKeys = ['nhacdo', 'karaoke', 'giaitri', 'wedding', 'sleep', 'cooking'];
-                let activeCatKey = null;
-                for (let key of priorityKeys) {
-                    if (cats.includes(key)) {
-                        activeCatKey = key;
-                        break;
-                    }
-                }
-                const catCleanName = catCleanMap[activeCatKey] || 'danh sách';
+                const activeCatKey = cats[0];
+                const catCleanName = SONG_CATEGORY_FOLDERS[activeCatKey] || 'danh sách';
 
                 showConfirmModal({
                     title: '⚠️ Xác nhận bỏ khỏi danh sách',

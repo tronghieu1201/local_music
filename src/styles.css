@@ -271,18 +271,6 @@ body {
     border-radius: 4px;
 }
 
-.icon-cat.icon-nhacdo {
-    width: 18px;
-    height: 12px;
-    border-radius: 2px;
-
-    background-image: url("../assets/logo/vietnam.webp");
-}
-
-.icon-cat.icon-cooking {
-    background-image: url("../assets/logo/cooking.webp");
-}
-
 .icon-cat.icon-karaoke {
     background-image: url("../assets/logo/karaoke.webp");
 }
@@ -292,14 +280,6 @@ body {
     background-image: url("../assets/logo/game-over.webp");
 }
 
-.icon-cat.icon-wedding {
-    background-image: url("../assets/logo/wedding-couple.webp");
-}
-
-.icon-cat.icon-sleep {
-    background-image: url("../assets/logo/sleeping.webp");
-}
-
 .icon-cat.icon-note {
     background-image: url("../assets/logo/note.webp");
 }
@@ -307,11 +287,6 @@ body {
 .cat-tag-btn .icon-cat {
     width: 16px;
     height: 16px;
-}
-
-.cat-tag-btn .icon-cat.icon-nhacdo {
-    width: 15px;
-    height: 10px;
 }
 
 .nav-item svg {
@@ -4684,6 +4659,12 @@ kbd {
     grid-template-rows: 72px 230px minmax(0, 1fr);
 }
 
+@media (min-width: 769px) and (min-height: 501px), (min-width: 1025px) {
+    .main-content {
+        row-gap: 16px;
+    }
+}
+
 .sidebar {
     padding: 24px 14px;
     background: var(--surface);
@@ -5551,10 +5532,11 @@ textarea:disabled {
 
     body.mobile-view-for-you .control-buttons {
         display: grid !important;
-        grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(48px, 1.3fr) repeat(3, minmax(0, 1fr));
+        grid-template-columns: repeat(7, minmax(0, 1fr));
         justify-items: center;
-        margin: 0;
-        gap: 4px;
+        width: min(100%, 368px);
+        margin: 0 auto;
+        gap: 8px;
     }
 
     body.mobile-view-for-you .btn-mode-cycle {
@@ -6353,10 +6335,11 @@ button:active,
     /* now-playing-card is flex row: avatar | track-info | waveform */
     .now-playing-card {
         flex-wrap: nowrap;
-        gap: 14px;
+        gap: 20px;
         align-items: stretch;
         width: 100%;
         min-width: 0;
+        padding: 16px 18px;
     }
 
     /* track-info must not grow too wide so waveform gets space */
@@ -7088,15 +7071,6 @@ body.mobile-view-library .nav-item.active,
 #current-playlist-heading {
     min-width: 0;
     overflow-wrap: anywhere;
-}
-
-.playlist-title .playlist-heading-icon {
-    width: 24px;
-    height: 24px;
-    flex: 0 0 24px;
-    padding: 0;
-    border-radius: 4px;
-    background-color: transparent;
 }
 
 /* The same account controls are available from Settings on every screen. */
