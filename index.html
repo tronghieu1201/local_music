@@ -6,8 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SoundKer - Trình Nghe Nhạc</title>
     <link id="site-favicon" rel="icon" type="image/png" href="assets/logo/orange.png?v=1">
-    <script src="src/theme.js?v=orange-ff6600-1"></script>
-    <link rel="stylesheet" href="src/styles.css?v=soundker-20261031-3">
+    <script src="src/theme.js?v=day-night-1"></script>
+    <link rel="stylesheet" href="src/styles.css?v=soundker-20261111-player-controls-6">
     <!-- Lucide + Morphicons icon system (ESM module, loaded before app.js) -->
     <script type="module" src="src/icons.js"></script>
 </head>
@@ -18,7 +18,8 @@
         <aside class="sidebar">
             <div class="brand" id="brand-home-btn" role="button" tabindex="0" title="Về trang chủ (Tất cả bài hát)">
                 <div class="logo-icon">
-                    <img src="assets/logo/orange.png?v=1" alt="SoundKer Logo" class="brand-logo-img">
+                    <img src="assets/logo/orange.png?v=1" alt="SoundKer Logo" class="brand-logo-img brand-logo-img--light">
+                    <img src="assets/logo/orange-dark.png?v=1" alt="" aria-hidden="true" class="brand-logo-img brand-logo-img--dark">
                 </div>
                 <div class="brand-text">
                     <h1>SoundKer</h1>
@@ -49,10 +50,10 @@
                     <span>Karaoke</span>
                     <span class="count-badge" id="karaoke-count">0</span>
                 </button>
-                <button class="nav-item" data-tab="giaitri">
-                    <span class="icon-cat icon-giaitri"></span>
-                    <span>Giải Trí</span>
-                    <span class="count-badge" id="giaitri-count">0</span>
+                <button class="nav-item" data-tab="ker">
+                    <span class="icon-cat icon-ker"></span>
+                    <span>Ker</span>
+                    <span class="count-badge" id="ker-count">0</span>
                 </button>
                 <button class="nav-item" data-tab="note">
                     <span class="icon-cat icon-note"></span>
@@ -127,7 +128,7 @@
                     <button class="btn-icon" id="refresh-page-btn" type="button" title="Làm mới trang (Ctrl+Shift+5)" aria-label="Làm mới trang">
                         <span id="refresh-icon-container" class="header-icon-container"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M3 3v6h6m12 12v-6h-6M3 9a9 9 0 0 1 15-4l3 4M3 15l3 4a9 9 0 0 0 15-4"></path></svg></span>
                     </button>
-                    <button class="btn-icon theme-toggle" id="theme-toggle-btn" type="button" title="Chuyển sang giao diện tối" aria-label="Giao diện tối" aria-pressed="false">
+                    <button class="btn-icon theme-toggle" id="theme-toggle-btn" type="button" title="Chuyển sang giao diện tối" aria-label="Chuyển sang giao diện tối" aria-pressed="false">
                         <svg class="theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.9 13A9 9 0 0 1 11 3.1 9 9 0 1 0 20.9 13Z"></path></svg>
                         <svg class="theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>
                     </button>
@@ -703,7 +704,6 @@
                     <button class="btn-icon theme-toggle" id="mobile-theme-toggle-btn" type="button" title="Chuyển giao diện" aria-label="Chuyển giao diện" aria-pressed="false">
                         <svg class="theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.9 13A9 9 0 0 1 11 3.1 9 9 0 1 0 20.9 13Z"></path></svg>
                         <svg class="theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>
-                        <svg class="theme-icon-system" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="13" rx="2"></rect><path d="M8 21h8m-4-4v4"></path></svg>
                     </button>
                 </div>
 
@@ -823,7 +823,7 @@
     <script src="src/admin-diagnostics.js"></script>
     <script src="src/admin-integrity.js"></script>
     <script src="src/library-cache.js?v=6ab3a652002e667289ab-2"></script>
-    <script src="src/app.js?v=soundker-20261031-2"></script>
+    <script src="src/app.js?v=soundker-20261111-motion-3"></script>
 </body>
 
 </html>

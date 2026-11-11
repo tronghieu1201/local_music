@@ -133,14 +133,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const REMOVED_CATEGORY_FOLDER_KEYS = new Set([
         'cloud', 'alone', 'person',
         'nhac do', 'nhacdo', 'di ngu', 'sleep',
-        'nau an', 'cooking', 'wedding', 'wedding-couple'
+        'nau an', 'cooking', 'wedding', 'wedding-couple',
+        'giai tri', 'giaitri', 'game', 'game-over'
     ]);
-    const CATEGORY_TAB_KEYS = Object.freeze(['karaoke', 'giaitri']);
+    const CATEGORY_TAB_KEYS = Object.freeze(['karaoke', 'ker']);
     const PLAYLIST_TAB_LABELS = Object.freeze({
         all: 'Tất Cả',
         unfiled: 'Bài Hát Chưa Chọn',
         karaoke: 'Karaoke',
-        giaitri: 'Giải Trí',
+        ker: 'Ker',
         recent: 'Vừa Nghe Gần Đây'
     });
 
@@ -196,7 +197,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Playback loop modes: 'off', 'one', 'sequential', 'shuffle'
     let loopMode = 'off';
 
-    // Tabs: 'all', 'unfiled', 'karaoke', 'giaitri', 'recent'
+    // Tabs: 'all', 'unfiled', 'karaoke', 'ker', 'recent'
     let currentTab = 'all';
     let currentFolder = 'all';
     let searchQuery = '';
@@ -285,7 +286,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const totalCountEl = document.getElementById('total-count');
     const unfiledCountEl = document.getElementById('unfiled-count');
     const karaokeCountEl = document.getElementById('karaoke-count');
-    const giaitriCountEl = document.getElementById('giaitri-count');
+    const kerCountEl = document.getElementById('ker-count');
 
     const playlistCountEl = document.getElementById('playlist-count');
     const playlistHeadingEl = document.getElementById('current-playlist-heading');
@@ -508,7 +509,7 @@ document.addEventListener('DOMContentLoaded', () => {
             searchBox.removeEventListener('transitionend', finishClosing);
             mobileSearchTransitionEnd = null;
             mobileSearchCloseTimer = null;
-        }, 450);
+        }, 560);
     }
 
     // --- Audio Context Setup ---
@@ -553,10 +554,9 @@ document.addEventListener('DOMContentLoaded', () => {
         toast.innerHTML = notice;
         container.appendChild(toast);
         setTimeout(() => {
-            toast.style.opacity = '0';
-            toast.style.transform = 'scale(0.85)';
-            toast.style.transition = 'all 0.3s ease';
-            setTimeout(() => toast.remove(), 300);
+            toast.classList.add('is-leaving');
+            const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            setTimeout(() => toast.remove(), reducedMotion ? 0 : 360);
         }, 3000);
     }
 
@@ -2816,7 +2816,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Category Management & Helper ---
     const SONG_CATEGORY_FOLDERS = Object.freeze({
         karaoke: 'Karaoke',
-        giaitri: 'Giải Trí'
+        ker: 'Ker'
     });
 
     function normalizeFolderValue(value) {
@@ -2828,15 +2828,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!song || !expectedFolder) return false;
 
         const expectedKey = normalizeFolderValue(expectedFolder);
-        const legacyKeys = {
-            karaoke: ['karaoke'],
-            giaitri: ['giaitri', 'giai tri', 'game', 'game-over']
-        }[catName] || [];
-
-        return normalizeFolderList(song.folders).some(folder => {
-            const folderKey = normalizeFolderValue(folder);
-            return folderKey === expectedKey || legacyKeys.includes(folderKey);
-        });
+        return normalizeFolderList(song.folders)
+            .some(folder => normalizeFolderValue(folder) === expectedKey);
     }
 
     function getSongCategoriesForUI(song) {
@@ -2856,19 +2849,19 @@ document.addEventListener('DOMContentLoaded', () => {
     function updateCategoryBadges() {
         let unfiledCount = 0;
         let karaokeCount = 0;
-        let giaitriCount = 0;
+        let kerCount = 0;
 
         getVisibleSongsForCurrentUser().forEach(song => {
             if (!song) return;
             const cats = getSongCategoriesForUI(song);
             if (isSongUnfiled(song)) unfiledCount++;
             if (cats.includes('karaoke')) karaokeCount++;
-            if (cats.includes('giaitri')) giaitriCount++;
+            if (cats.includes('ker')) kerCount++;
         });
 
         if (unfiledCountEl) unfiledCountEl.textContent = unfiledCount;
         if (karaokeCountEl) karaokeCountEl.textContent = karaokeCount;
-        if (giaitriCountEl) giaitriCountEl.textContent = giaitriCount;
+        if (kerCountEl) kerCountEl.textContent = kerCount;
     }
 
     // --- Folder Navigation ---
@@ -2967,9 +2960,9 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (currentTab === 'karaoke') {
             currentPlaylist = currentPlaylist.filter(s => s && getSongCategoriesForUI(s).includes('karaoke'));
             playlistHeadingEl.textContent = isMobile ? 'Karaoke' : 'Danh Sách Bài Hát Karaoke';
-        } else if (currentTab === 'giaitri') {
-            currentPlaylist = currentPlaylist.filter(s => s && getSongCategoriesForUI(s).includes('giaitri'));
-            playlistHeadingEl.textContent = isMobile ? 'Giải Trí' : 'Danh Sách Bài Hát Giải Trí';
+        } else if (currentTab === 'ker') {
+            currentPlaylist = currentPlaylist.filter(s => s && getSongCategoriesForUI(s).includes('ker'));
+            playlistHeadingEl.textContent = isMobile ? 'Ker' : 'Danh Sách Bài Hát Ker';
         } else if (currentTab === 'recent') {
             const recentArr = Array.isArray(recentSongs) ? recentSongs : [];
             currentPlaylist = recentArr.map(id => visibleSongs.find(s => s && s.id === id)).filter(Boolean);
@@ -3093,7 +3086,7 @@ document.addEventListener('DOMContentLoaded', () => {
         songListEl.innerHTML = '';
         const categoryNameMap = {
             karaoke: 'Karaoke',
-            giaitri: 'Giải Trí'
+            ker: 'Ker'
         };
 
         const activeSong = getCurrentPlayingSong();
@@ -3115,11 +3108,11 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const hasKaraoke = isSongCategoryActive(song, 'karaoke');
-            const hasGiaitri = isSongCategoryActive(song, 'giaitri');
+            const hasKer = isSongCategoryActive(song, 'ker');
 
             const categoryTagButtons = canEditCategories ? `
                     <button class="cat-tag-btn ${hasKaraoke ? 'active' : ''}" data-cat="karaoke" title="Karaoke"><span class="icon-cat icon-karaoke"></span></button>
-                    <button class="cat-tag-btn ${hasGiaitri ? 'active' : ''}" data-cat="giaitri" title="Giải Trí"><span class="icon-cat icon-giaitri"></span></button>
+                    <button class="cat-tag-btn ${hasKer ? 'active' : ''}" data-cat="ker" title="Ker"><span class="icon-cat icon-ker"></span></button>
                 ` : '';
 
             const songActions = canEditCategories ? `
@@ -4791,7 +4784,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const catDisplayMap = {
             karaoke: { iconHtml: '<span class="icon-cat icon-karaoke" style="margin-right: 4px;"></span>' },
-            giaitri: { iconHtml: '<span class="icon-cat icon-giaitri" style="margin-right: 4px;"></span>' }
+            ker: { iconHtml: '<span class="icon-cat icon-ker" style="margin-right: 4px;"></span>' }
         };
 
         if (song) {
@@ -4836,7 +4829,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const categories = [
             { key: 'karaoke', label: '<span class="icon-cat icon-karaoke" style="margin-right: 6px;"></span> Karaoke' },
-            { key: 'giaitri', label: '<span class="icon-cat icon-giaitri" style="margin-right: 6px;"></span> Giải Trí' },
+            { key: 'ker', label: '<span class="icon-cat icon-ker" style="margin-right: 6px;"></span> Ker' },
         ];
 
         const songCats = getSongCategoriesForUI(song);
@@ -4905,7 +4898,7 @@ document.addEventListener('DOMContentLoaded', () => {
         currentTags.innerHTML = '';
         const tagMap = {
             karaoke: '<span class="icon-cat icon-karaoke"></span><span class="tag-label"> Karaoke</span>',
-            giaitri: '<span class="icon-cat icon-giaitri"></span><span class="tag-label"> Giải Trí</span>'
+            ker: '<span class="icon-cat icon-ker"></span><span class="tag-label"> Ker</span>'
         };
 
         const addedTags = new Set();
@@ -5037,7 +5030,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const folderCleanMap = {
                     karaoke: 'Karaoke',
-                    giaitri: 'Giải Trí'
+                    ker: 'Ker'
                 };
                 const folderCleanName = folderCleanMap[currentTab] || currentTab;
 
@@ -5955,15 +5948,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // ── Main draw loop ───────────────────────────────────────────────────
         let lastFrameTime = 0;
-        const TARGET_FPS = 50; // cap at 50 fps (~20 ms) to save battery on mobile
+        const TARGET_FPS = 60;
         const FRAME_BUDGET = 1000 / TARGET_FPS;
 
         function drawWaveformFrame(timestamp) {
             waveRafId = requestAnimationFrame(drawWaveformFrame);
 
-            // Throttle frames for power efficiency
-            if (timestamp - lastFrameTime < FRAME_BUDGET) return;
+            // Keep a steady cadence on both 60 Hz and high-refresh displays.
+            const elapsed = timestamp - lastFrameTime;
+            if (elapsed < FRAME_BUDGET - 2) return;
             lastFrameTime = timestamp;
+            const frameRatio = Math.min(2.5, Math.max(0.5, elapsed / FRAME_BUDGET));
+            const smoothStep = (amount) => 1 - Math.pow(1 - amount, frameRatio);
 
             // Skip rendering when tab is hidden
             if (document.hidden) return;
@@ -6042,20 +6038,22 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // ── Smoothing ────────────────────────────────────────────────────
-            if (hasRealData && rawHeights && isPlaying) {
+            if (prefersReduced.matches) {
+                smoothedHeights.fill(0);
+            } else if (hasRealData && rawHeights && isPlaying) {
                 for (let i = 0; i < barCount; i++) {
                     const target = rawHeights[i] * maxBarHalf;
                     const difference = target - smoothedHeights[i];
                     const motion = Math.min(1, Math.abs(difference) / Math.max(1, maxBarHalf * 0.35));
                     const smoothing = difference > 0
-                        ? 0.16 + motion * 0.40
-                        : 0.08 + motion * 0.14;
-                    smoothedHeights[i] += difference * smoothing;
+                        ? 0.10 + motion * 0.25
+                        : 0.04 + motion * 0.10;
+                    smoothedHeights[i] += difference * smoothStep(smoothing);
                 }
-                idlePhase = (idlePhase + 0.005) % (Math.PI * 2);
+                idlePhase = (idlePhase + 0.003 * frameRatio) % (Math.PI * 2);
             } else if (isPlaying) {
                 // Fallback breathing wave when audio analysis is unavailable during playback.
-                idlePhase = (idlePhase + 0.018) % (Math.PI * 2);
+                idlePhase = (idlePhase + 0.010 * frameRatio) % (Math.PI * 2);
                 for (let i = 0; i < barCount; i++) {
                     const pos = i / (barCount - 1);
                     // Two overlapping sine waves for organic movement
@@ -6070,12 +6068,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Keep a restrained motion when audio analysis is unavailable during playback.
                     const idleMax = maxBarHalf * 0.24;
                     const target = combined * bell * idleMax;
-                    smoothedHeights[i] += (target - smoothedHeights[i]) * 0.08;
+                    smoothedHeights[i] += (target - smoothedHeights[i]) * smoothStep(0.06);
                 }
             } else {
                 // Let the bars settle smoothly to silence after pause.
                 for (let i = 0; i < barCount; i++) {
-                    smoothedHeights[i] += (0 - smoothedHeights[i]) * 0.14;
+                    smoothedHeights[i] += (0 - smoothedHeights[i]) * smoothStep(0.08);
                 }
             }
 
@@ -6245,7 +6243,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!mobileSettingsModal) return;
         mobileSettingsModal.classList.add('active');
         if (mobileTabSettings && isMobileLayout()) mobileTabSettings.classList.add('active');
-        syncMobileThemeState();
     }
 
     function closeMobileSettingsModal() {
@@ -6288,30 +6285,9 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Mobile theme toggle button
+    // The theme script owns the button click; the settings row shares its action.
     function triggerThemeToggle() {
-        if (typeof window.LocalSoundToggleTheme === 'function') {
-            window.LocalSoundToggleTheme();
-        } else {
-            const toggleBtn = document.getElementById('theme-toggle-btn');
-            if (toggleBtn) {
-                toggleBtn.click();
-            } else {
-                const root = document.documentElement;
-                const nextTheme = root.dataset.theme === 'dark' ? 'light' : 'dark';
-                root.dataset.theme = nextTheme;
-                try { localStorage.setItem('localsound-desktop-theme', nextTheme); } catch (e) {}
-            }
-        }
-        syncMobileThemeState();
-    }
-
-    if (mobileThemeToggleBtn) {
-        mobileThemeToggleBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            triggerThemeToggle();
-        });
+        window.LocalSoundToggleTheme?.();
     }
 
     // Make theme row clickable
@@ -6368,23 +6344,6 @@ document.addEventListener('DOMContentLoaded', () => {
             triggerInfoAction();
         });
     }
-
-    // Sync mobile theme button state with current theme
-    function syncMobileThemeState() {
-        if (!mobileThemeToggleBtn) return;
-        const isDark = document.documentElement.dataset.theme === 'dark';
-        const mode = document.documentElement.dataset.themeMode || (isDark ? 'dark' : 'light');
-        const modeLabel = mode === 'system' ? 'hệ thống' : mode === 'dark' ? 'tối' : 'sáng';
-        const nextLabel = mode === 'light' ? 'tối' : mode === 'dark' ? 'hệ thống' : 'sáng';
-        mobileThemeToggleBtn.dataset.themeMode = mode;
-        mobileThemeToggleBtn.setAttribute('aria-pressed', mode === 'system' ? 'mixed' : String(isDark));
-        mobileThemeToggleBtn.setAttribute('aria-label', `Giao diện ${modeLabel}; nhấn để chuyển sang ${nextLabel}`);
-        mobileThemeToggleBtn.title = `Giao diện ${modeLabel} · chuyển sang ${nextLabel}`;
-    }
-
-    syncMobileThemeState();
-    const themeObserver = new MutationObserver(syncMobileThemeState);
-    themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
 
     openTemporaryDataNoticeUnlessSnoozed();
 

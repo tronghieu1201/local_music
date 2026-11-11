@@ -17,6 +17,10 @@
     --weight-medium: 500;
     --weight-semibold: 600;
     --weight-bold: 700;
+    --motion-feedback: 180ms;
+    --motion-state: 360ms;
+    --motion-reveal: 520ms;
+    --motion-ease: cubic-bezier(0.16, 1, 0.3, 1);
 
     /* ===== SOUNDKER: ORANGE ACCENTS ON WHITE GLASS ===== */
     /* Backgrounds */
@@ -275,9 +279,8 @@ body {
     background-image: url("../assets/logo/karaoke.webp");
 }
 
-.icon-cat.icon-giaitri,
-.icon-cat.icon-game {
-    background-image: url("../assets/logo/game-over.webp");
+.icon-cat.icon-ker {
+    background-image: url("../assets/logo/leaf.webp");
 }
 
 .icon-cat.icon-note {
@@ -372,6 +375,10 @@ body {
 .folder-item.active .folder-dot {
     background: var(--accent);
 
+}
+
+.admin-sidebar-section .folder-item + .folder-item {
+    margin-top: 6px;
 }
 
 /* System Status */
@@ -1800,19 +1807,19 @@ textarea:disabled {
 }
 
 .song-equalizer.is-playing > span {
-    animation: song-index-equalizer 720ms ease-in-out infinite alternate;
+    animation: song-index-equalizer 1200ms ease-in-out infinite alternate;
 }
 
 .song-equalizer.is-playing > span:nth-child(1) {
-    animation-delay: -480ms;
+    animation-delay: -800ms;
 }
 
 .song-equalizer.is-playing > span:nth-child(2) {
-    animation-delay: -240ms;
+    animation-delay: -400ms;
 }
 
 .song-equalizer.is-playing > span:nth-child(3) {
-    animation-delay: -600ms;
+    animation-delay: -1000ms;
 }
 
 @keyframes song-index-equalizer {
@@ -3983,6 +3990,10 @@ kbd {
         scrollbar-width: none;
     }
 
+    body.mobile-view-library .admin-sidebar-section .folder-item + .folder-item {
+        margin-top: 0;
+    }
+
     body.mobile-view-library .sidebar-section::-webkit-scrollbar {
         display: none;
     }
@@ -4656,7 +4667,7 @@ kbd {
 .main-content {
     min-width: 0;
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: 72px 230px minmax(0, 1fr);
+    grid-template-rows: 72px auto minmax(0, 1fr);
 }
 
 @media (min-width: 769px) and (min-height: 501px), (min-width: 1025px) {
@@ -5773,7 +5784,7 @@ textarea:disabled {
 @media (min-width: 769px) and (max-width: 980px) {
     .player-controls {
         grid-template-columns: minmax(0, 1fr);
-        row-gap: 8px;
+        row-gap: 12px;
     }
 
     .control-buttons {
@@ -5781,14 +5792,13 @@ textarea:disabled {
     }
 
     .player-controls .volume-container {
-        position: absolute;
-        right: 0;
-        top: -64px;
+        position: static;
+        justify-self: center;
         width: 132px;
     }
 
     .now-playing-card .track-info {
-        padding-right: 132px;
+        padding-right: 0;
     }
 }
 
@@ -6079,12 +6089,8 @@ button:active,
     }
 }
 
-/* Theme preference applies only to the desktop layout. */
+/* The header toggle stays in its existing 40px action slot. */
 .header-actions .theme-toggle {
-    display: none;
-}
-
-.theme-icon-sun {
     display: none;
 }
 
@@ -6096,27 +6102,11 @@ button:active,
         flex: 0 0 40px;
     }
 
-    .header-actions .theme-toggle svg {
-        width: 20px;
-        height: 20px;
-    }
 }
 
 .theme-toggle:focus-visible {
     outline: 2px solid var(--accent-ink);
     outline-offset: 3px;
-}
-
-.theme-toggle[aria-pressed="true"] {
-    background: var(--accent-light);
-    border-color: var(--accent-soft);
-    color: var(--accent-ink);
-}
-
-.theme-toggle[aria-pressed="mixed"] {
-    background: var(--accent-light);
-    border-color: var(--accent-soft);
-    color: var(--accent-ink);
 }
 
 :root[data-theme="dark"] {
@@ -6143,14 +6133,6 @@ button:active,
     --toast-success: var(--success);
     --warning: #F1D08E;
     --warning-bg: #342A1B;
-}
-
-:root[data-theme="dark"] .theme-icon-moon {
-    display: none;
-}
-
-:root[data-theme="dark"] .theme-icon-sun {
-    display: block;
 }
 
 :root[data-theme="dark"] .modal {
@@ -6199,7 +6181,7 @@ button:active,
     background: var(--surface-hover);
     border: 1px solid var(--border);
     cursor: pointer;
-    transition: background 0.2s ease, border-color 0.2s ease;
+    transition: background var(--motion-state) var(--motion-ease), border-color var(--motion-state) var(--motion-ease);
 }
 
 .settings-item:hover,
@@ -6269,8 +6251,7 @@ button:active,
     position: relative;
 }
 
-.header-actions #refresh-page-btn,
-.header-actions #theme-toggle-btn {
+.header-actions #refresh-page-btn {
     display: none !important;
 }
 
@@ -6406,31 +6387,6 @@ body.mobile-view-library .waveform-wrapper {
         display: block;
         margin: 0;
     }
-}
-
-.theme-toggle .theme-icon-sun,
-.theme-toggle .theme-icon-moon,
-.theme-toggle .theme-icon-system {
-    display: none;
-}
-
-:root[data-theme-mode="light"] .theme-toggle .theme-icon-sun {
-    display: block;
-}
-
-:root[data-theme-mode="dark"] .theme-toggle .theme-icon-moon {
-    display: block;
-}
-
-:root[data-theme-mode="system"] .theme-toggle .theme-icon-system {
-    display: block;
-}
-
-:root[data-theme-mode="dark"] .theme-toggle .theme-icon-sun,
-:root[data-theme-mode="system"] .theme-toggle .theme-icon-sun,
-:root[data-theme-mode="light"] .theme-toggle .theme-icon-moon,
-:root[data-theme-mode="system"] .theme-toggle .theme-icon-moon {
-    display: none;
 }
 
 /* --------------------------------------------------------------------------
@@ -6785,7 +6741,7 @@ body::after {
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.58) !important;
     backdrop-filter: blur(14px) saturate(130%);
     -webkit-backdrop-filter: blur(14px) saturate(130%);
-    transition: background 180ms ease, border-color 180ms ease, box-shadow 180ms ease !important;
+    transition: background var(--motion-state) var(--motion-ease), border-color var(--motion-state) var(--motion-ease), box-shadow var(--motion-state) var(--motion-ease), color var(--motion-state) var(--motion-ease) !important;
 }
 
 .search-box:focus-within {
@@ -6827,7 +6783,7 @@ body::after {
     background: var(--glass-surface-soft);
     border: 1px solid transparent;
     border-radius: 12px !important;
-    transition: background 180ms ease, border-color 180ms ease, color 180ms ease !important;
+    transition: background var(--motion-state) var(--motion-ease), border-color var(--motion-state) var(--motion-ease), color var(--motion-state) var(--motion-ease) !important;
 }
 
 .nav-item:hover,
@@ -6916,7 +6872,7 @@ body.mobile-view-library .nav-item.active,
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.34);
     backdrop-filter: blur(10px) saturate(125%);
     -webkit-backdrop-filter: blur(10px) saturate(125%);
-    transition: background 180ms ease, border-color 180ms ease, box-shadow 180ms ease !important;
+    transition: background var(--motion-state) var(--motion-ease), border-color var(--motion-state) var(--motion-ease), box-shadow var(--motion-state) var(--motion-ease) !important;
 }
 
 .song-item:hover {
@@ -6944,7 +6900,7 @@ body.mobile-view-library .nav-item.active,
 
 .dropdown-item {
     border-radius: 8px;
-    transition: background 180ms ease, color 180ms ease;
+    transition: background var(--motion-state) var(--motion-ease), color var(--motion-state) var(--motion-ease);
 }
 
 .dropdown-item:hover {
@@ -7152,7 +7108,7 @@ body.mobile-view-library .nav-item.active,
     background: var(--accent-selected) !important;
     border: 1px solid var(--accent-selected) !important;
     cursor: pointer;
-    transition: background 0.2s ease, box-shadow 0.2s ease;
+    transition: background var(--motion-state) var(--motion-ease), box-shadow var(--motion-state) var(--motion-ease);
 }
 
 #mobile-settings-modal #auth-login-btn .btn-icon-svg svg {
@@ -7256,5 +7212,399 @@ body.mobile-view-library .nav-item.active,
         overflow-y: auto;
         padding: 7px;
         z-index: 1000002;
+    }
+}
+
+/* Phone player: let the artwork and controls determine the height. */
+@media (max-width: 768px), (max-width: 1024px) and (max-height: 500px) and (pointer: coarse) {
+    .app-container,
+    body.mobile-view-for-you .app-container {
+        height: calc(100dvh - 72px - env(safe-area-inset-bottom)) !important;
+    }
+
+    body.mobile-view-for-you .top-header {
+        border-radius: 0 !important;
+        box-shadow: none;
+    }
+
+    body.mobile-view-for-you .mobile-discovery-tab {
+        font-size: .9rem;
+    }
+
+    body.mobile-view-for-you .player-stage {
+        justify-content: flex-start;
+        gap: 18px;
+        padding: 16px max(14px, env(safe-area-inset-right)) 16px max(14px, env(safe-area-inset-left));
+        overflow-x: hidden;
+        overflow-y: auto;
+        border: 0;
+        border-radius: 0 !important;
+    }
+
+    body.mobile-view-for-you .now-playing-card {
+        flex: 0 0 auto;
+        flex-direction: column;
+        justify-content: flex-start;
+        align-items: center;
+        width: min(100%, 420px);
+        min-height: 0;
+        margin: auto 0 0;
+        padding: 20px 16px 14px;
+        gap: 12px;
+        border-radius: 16px;
+        box-sizing: border-box;
+    }
+
+    body.mobile-view-for-you .now-playing-card .card-avatar-wrapper {
+        flex: 0 0 auto;
+        width: clamp(160px, min(58vw, 28dvh), 248px);
+        height: auto;
+        aspect-ratio: 1;
+    }
+
+    body.mobile-view-for-you .now-playing-card .card-listen-avatar {
+        width: 100%;
+        height: 100%;
+    }
+
+    body.mobile-view-for-you .now-playing-card .track-info {
+        flex: 0 0 auto;
+        gap: 4px;
+        padding: 0;
+    }
+
+    body.mobile-view-for-you .waveform-wrapper {
+        flex: 0 0 auto;
+        width: 100%;
+        height: 42px;
+    }
+
+    body.mobile-view-for-you .player-controls {
+        flex: 0 0 auto;
+        width: min(100%, 420px);
+        max-width: none;
+        margin: 0 0 auto;
+        padding: 0;
+        gap: 12px;
+    }
+
+    body.mobile-view-for-you .progress-bar-container {
+        min-height: 28px;
+        gap: 12px;
+        font-size: .85rem;
+    }
+
+    body.mobile-view-for-you .control-buttons {
+        display: grid !important;
+        grid-template-columns: repeat(12, minmax(0, 1fr));
+        grid-template-rows: 56px 44px;
+        justify-items: center;
+        align-items: center;
+        width: min(100%, 300px);
+        margin: 0 auto;
+        row-gap: 8px;
+        column-gap: 0;
+    }
+
+    body.mobile-view-for-you .play-group {
+        display: contents;
+    }
+
+    body.mobile-view-for-you .btn-mode-cycle {
+        display: flex !important;
+        grid-column: 1 / span 2;
+        grid-row: 2;
+    }
+
+    body.mobile-view-for-you #seek-back-5-btn {
+        grid-column: 4 / span 2;
+        grid-row: 2;
+    }
+
+    body.mobile-view-for-you #prev-btn {
+        grid-column: 3 / span 2;
+        grid-row: 1;
+    }
+
+    body.mobile-view-for-you .btn-play {
+        grid-column: 6 / span 2;
+        grid-row: 1;
+        width: 56px;
+        height: 56px;
+    }
+
+    body.mobile-view-for-you #next-btn {
+        grid-column: 9 / span 2;
+        grid-row: 1;
+    }
+
+    body.mobile-view-for-you #seek-forward-5-btn {
+        grid-column: 8 / span 2;
+        grid-row: 2;
+    }
+
+    body.mobile-view-for-you .btn-player-more {
+        grid-column: 11 / span 2;
+        grid-row: 2;
+        position: static;
+        transform: none;
+        margin: 0;
+    }
+
+    body.mobile-view-for-you .play-group .btn-ctrl,
+    body.mobile-view-for-you .btn-mode-cycle,
+    body.mobile-view-for-you .btn-player-more {
+        width: 44px;
+        min-width: 44px;
+        height: 44px;
+        padding: 0;
+    }
+
+    body.mobile-view-for-you #prev-btn,
+    body.mobile-view-for-you #next-btn {
+        border: 0;
+        background: transparent;
+        color: var(--text);
+    }
+
+    body.mobile-view-for-you .volume-container {
+        position: static;
+        width: min(100%, 280px);
+        min-height: 44px;
+        margin: 0 auto;
+        gap: 12px;
+        transform: none;
+    }
+
+    body.mobile-view-for-you .volume-container .btn-icon-small {
+        position: static;
+        flex: 0 0 44px;
+        width: 44px;
+        height: 44px;
+        transform: none;
+    }
+
+    body.mobile-view-for-you .volume-wrapper {
+        flex: 1 1 auto;
+        width: auto;
+    }
+
+    .mobile-bottom-nav {
+        display: grid !important;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        height: calc(72px + env(safe-area-inset-bottom));
+        padding: 8px 12px calc(8px + env(safe-area-inset-bottom));
+        gap: 8px;
+        border-radius: 0 !important;
+        box-sizing: border-box;
+    }
+
+    .mobile-nav-tab {
+        min-width: 0;
+        min-height: 0;
+        height: 56px;
+        padding: 5px 6px;
+        gap: 2px;
+        font-size: .85rem;
+        border: 0;
+        border-radius: 12px !important;
+        background: transparent;
+    }
+
+    .mobile-nav-tab.active::after {
+        display: none;
+    }
+}
+
+@media (max-width: 768px) and (max-height: 620px), (max-width: 1024px) and (max-height: 500px) and (pointer: coarse) {
+    body.mobile-view-for-you .player-stage {
+        gap: 12px;
+        padding-block: 10px;
+    }
+
+    body.mobile-view-for-you .now-playing-card {
+        padding: 12px;
+        gap: 8px;
+    }
+
+    body.mobile-view-for-you .now-playing-card .card-avatar-wrapper {
+        width: clamp(112px, 24dvh, 160px);
+    }
+
+    body.mobile-view-for-you .waveform-wrapper {
+        height: 32px;
+    }
+
+    body.mobile-view-for-you .player-controls {
+        gap: 8px;
+    }
+}
+
+/* Shared motion for state changes across the player, library and admin views. */
+:is(button, select, input, textarea, .menu-option-btn, .mobile-discovery-category-item, .tag-chip, .song-tag, .song-index, .song-title-text, .now-playing-card) {
+    transition: color var(--motion-state) var(--motion-ease),
+        background-color var(--motion-state) var(--motion-ease),
+        border-color var(--motion-state) var(--motion-ease),
+        opacity var(--motion-state) var(--motion-ease);
+}
+
+:is(body, .sidebar, .main-content, .top-header, .player-stage, .playlist-section, .notes-section, .modal-content, .mobile-bottom-nav, .mobile-mini-player, .settings-item) {
+    transition: background-color var(--motion-state) var(--motion-ease),
+        border-color var(--motion-state) var(--motion-ease),
+        color var(--motion-state) var(--motion-ease);
+}
+
+button:active {
+    transition-duration: var(--motion-feedback) !important;
+}
+
+@keyframes surface-enter {
+    from { opacity: 0; transform: translateY(8px) scale(0.985); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes backdrop-enter {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes toast-leave {
+    to { opacity: 0; transform: translateY(-6px); }
+}
+
+.modal.active {
+    animation: backdrop-enter var(--motion-state) var(--motion-ease) both;
+}
+
+.modal.active .modal-content,
+.toast {
+    animation: surface-enter var(--motion-reveal) var(--motion-ease) both;
+}
+
+.song-dropdown-menu:not(.hidden),
+.mobile-discovery-category-menu:not(.hidden),
+.search-results-dropdown:not(.hidden) {
+    animation: backdrop-enter var(--motion-state) var(--motion-ease) both;
+}
+
+.toast.is-leaving {
+    animation: toast-leave var(--motion-state) var(--motion-ease) forwards;
+}
+
+@media (max-width: 768px), (max-width: 1024px) and (max-height: 500px) and (pointer: coarse) {
+    body.mobile-view-for-you .search-box::before {
+        transition: opacity var(--motion-state) var(--motion-ease),
+            transform var(--motion-reveal) var(--motion-ease);
+    }
+
+    body.mobile-view-for-you .mobile-discovery-nav {
+        transition: opacity var(--motion-state) var(--motion-ease),
+            transform var(--motion-reveal) var(--motion-ease);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    :is(button, select, input, textarea, .menu-option-btn, .mobile-discovery-category-item, .tag-chip, .song-tag, .song-index, .song-title-text, .now-playing-card) {
+        transition-duration: 100ms !important;
+        transition-property: color, background-color, border-color, opacity !important;
+    }
+
+    button:active {
+        transition-duration: 100ms !important;
+    }
+
+    :is(body, .sidebar, .main-content, .top-header, .player-stage, .playlist-section, .notes-section, .modal-content, .mobile-bottom-nav, .mobile-mini-player, .settings-item) {
+        transition-duration: 100ms !important;
+    }
+
+    .modal.active,
+    .modal.active .modal-content,
+    .song-dropdown-menu:not(.hidden),
+    .mobile-discovery-category-menu:not(.hidden),
+    .search-results-dropdown:not(.hidden),
+    .toast {
+        animation: none !important;
+    }
+
+    body.mobile-view-for-you .search-box::before,
+    body.mobile-view-for-you .mobile-discovery-nav {
+        transition: opacity 100ms ease-out !important;
+    }
+}
+
+/* Theme palette keeps the original sun and moon icons. */
+:root {
+    --theme-duration: 420ms;
+    --theme-ease: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.logo-icon {
+    position: relative;
+}
+
+.logo-icon .brand-logo-img {
+    position: absolute;
+    inset: 0;
+}
+
+.brand-logo-img--dark {
+    opacity: 0;
+}
+
+:root[data-theme="dark"] .brand-logo-img--light {
+    opacity: 0;
+}
+
+:root[data-theme="dark"] .brand-logo-img--dark {
+    opacity: 1;
+}
+
+.theme-toggle .theme-icon-sun,
+.theme-toggle .theme-icon-moon {
+    display: none;
+}
+
+:root[data-theme="light"] .theme-toggle .theme-icon-sun,
+:root[data-theme="dark"] .theme-toggle .theme-icon-moon {
+    display: block;
+}
+
+/* Theme colors interpolate from their current values, including rapid reversals. */
+:root.theme-ready,
+:root.theme-ready :is(body, .sidebar, .top-header, .player-stage, .playlist-section, .notes-section,
+    .now-playing-card, .song-item, .song-title-text, .song-index, .song-tag, .tag-chip,
+    .modal, .modal-content, .settings-item, .search-box, .song-dropdown-menu,
+    .mobile-discovery-category-menu, .search-results-dropdown, .mobile-bottom-nav,
+    .mobile-mini-player, .notes-unified-container, .count-badge, button, input, select, textarea) {
+    transition-property: color, background-color, border-color !important;
+    transition-duration: var(--theme-duration) !important;
+    transition-timing-function: var(--theme-ease) !important;
+}
+
+:root.theme-ready .brand-logo-img {
+    transition: opacity var(--theme-duration) var(--theme-ease);
+}
+
+:root.theme-ready :is(h1, h2, h3, h4, p, strong, small, label, time) {
+    transition: color var(--theme-duration) var(--theme-ease);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    :root.theme-ready,
+    :root.theme-ready :is(body, .sidebar, .top-header, .player-stage, .playlist-section, .notes-section,
+        .now-playing-card, .song-item, .song-title-text, .song-index, .song-tag, .tag-chip,
+        .modal, .modal-content, .settings-item, .search-box, .song-dropdown-menu,
+        .mobile-discovery-category-menu, .search-results-dropdown, .mobile-bottom-nav,
+        .mobile-mini-player, .notes-unified-container, .count-badge, button, input, select, textarea) {
+        transition-duration: 100ms !important;
+    }
+
+    :root.theme-ready .brand-logo-img {
+        transition-duration: 100ms !important;
+        transition-property: opacity !important;
+    }
+
+    :root.theme-ready :is(h1, h2, h3, h4, p, strong, small, label, time) {
+        transition-duration: 100ms !important;
     }
 }

@@ -3,7 +3,6 @@
     'use strict';
     const storageKey = 'localsound-desktop-theme';
     const root = document.documentElement;
-    const desktopLayout = window.matchMedia('(min-width: 769px)');
     const systemAppearance = window.matchMedia('(prefers-color-scheme: dark)');
     const favicon = document.getElementById('site-favicon');
 
@@ -11,9 +10,6 @@
         const dark = root.dataset.theme === 'dark';
         const asset = `assets/logo/${dark ? 'orange-dark' : 'orange'}.png?v=1`;
         favicon?.setAttribute('href', asset);
-        document.querySelectorAll('.brand-logo-img').forEach(image => {
-            if (image.getAttribute('src') !== asset) image.setAttribute('src', asset);
-        });
         // Keep the system media artwork in step without changing playback state.
         if (favicon && navigator.mediaSession?.metadata) {
             try {
@@ -32,21 +28,17 @@
         root.dataset.theme = dark ? 'dark' : 'light';
         root.dataset.themeMode = mode;
         syncBranding();
-        const modeLabel = mode === 'system' ? 'hệ thống' : mode === 'dark' ? 'tối' : 'sáng';
-        const nextLabel = mode === 'light' ? 'tối' : mode === 'dark' ? 'hệ thống' : 'sáng';
+        const nextLabel = dark ? 'sáng' : 'tối';
         document.querySelectorAll('.theme-toggle').forEach(button => {
-            button.dataset.themeMode = mode;
-            button.setAttribute('aria-pressed', mode === 'system' ? 'mixed' : String(dark));
-            button.setAttribute('aria-label', `Giao diện ${modeLabel}; nhấn để chuyển sang ${nextLabel}`);
-            button.title = `Giao diện ${modeLabel} · chuyển sang ${nextLabel}`;
+            button.setAttribute('aria-pressed', String(dark));
+            button.setAttribute('aria-label', `Chuyển sang giao diện ${nextLabel}`);
+            button.title = `Chuyển sang giao diện ${nextLabel}`;
         });
         return root.dataset.theme;
     }
 
     function toggleTheme() {
-        const modes = ['light', 'dark', 'system'];
-        const currentMode = root.dataset.themeMode || 'system';
-        const nextMode = modes[(modes.indexOf(currentMode) + 1) % modes.length];
+        const nextMode = root.dataset.theme === 'dark' ? 'light' : 'dark';
         const theme = applyTheme(nextMode);
         try {
             localStorage.setItem(storageKey, nextMode);
@@ -68,6 +60,7 @@
 
     document.addEventListener('DOMContentLoaded', () => {
         applyTheme(root.dataset.themeMode || savedTheme || 'system');
+        root.classList.add('theme-ready');
         document.querySelectorAll('.theme-toggle').forEach(button => {
             button.addEventListener('keydown', event => {
                 if (event.code === 'Space') event.stopPropagation();
@@ -83,5 +76,4 @@
     window.addEventListener('storage', event => {
         if (event.key === storageKey || event.key === null) applyTheme(event.newValue || 'system');
     });
-    desktopLayout.addEventListener('change', syncBranding);
 })();
