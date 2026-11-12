@@ -14,7 +14,9 @@ document.addEventListener('DOMContentLoaded', () => {
         let pullDistance = 0;
         let pullRefreshPending = false;
 
-        const isAtTop = () => window.scrollY <= 0 && (document.scrollingElement?.scrollTop || 0) <= 0;
+        const isAtTop = () => window.scrollY <= 0
+            && (document.scrollingElement?.scrollTop || 0) <= 0
+            && (document.querySelector('.workspace-content')?.scrollTop || 0) <= 0;
         const resetPullRefresh = () => {
             pullStartX = null;
             pullStartY = null;
@@ -220,7 +222,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let transientSentNotes = [];
     let submittingNote = false;
     let adminSongRequests = [];
-    let adminNoteFilter = 'new';
+    let adminNoteFilter = 'pending';
 
     let recentSongs = [];
     try {
@@ -411,7 +413,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 const maxWidth = Math.max(36, Math.min(420, searchBox.getBoundingClientRect().right - 12));
                 searchBox.style.setProperty('--mobile-search-width', `${maxWidth}px`);
             }
+            // Sync collapsed classes on layout change
+            if (searchBox) {
+                if (isMobileLayout()) {
+                    searchBox.classList.remove('desktop-search-collapsed');
+                } else {
+                    searchBox.classList.remove('mobile-search-collapsed');
+                    document.body.classList.remove('mobile-search-open');
+                    // Re-collapse desktop search when switching back to desktop
+                    if (!searchBox.classList.contains('desktop-search-collapsed')) {
+                        searchBox.classList.add('desktop-search-collapsed');
+                    }
+                }
+            }
         });
+        // Init desktop search collapsed
+        if (searchBox && !isMobileLayout()) {
+            searchBox.classList.add('desktop-search-collapsed');
+        }
         setupEventListeners();
         updateLoopModeButtonUI();
         initSongRequestLogic();
@@ -454,6 +473,23 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!searchBox || !searchInput) return;
 
         const isMobile = isMobileLayout();
+
+        // Desktop: toggle collapsed class independently
+        if (!isMobile) {
+            const shouldExpand = Boolean(expanded);
+            searchBox.classList.toggle('desktop-search-collapsed', !shouldExpand);
+            searchToggleBtn?.setAttribute('aria-expanded', String(shouldExpand));
+            searchToggleBtn?.setAttribute('aria-label', shouldExpand ? 'Thu gọn tìm kiếm' : 'Mở tìm kiếm');
+            if (searchToggleBtn) searchToggleBtn.title = shouldExpand ? 'Thu gọn tìm kiếm' : 'Mở tìm kiếm';
+            if (shouldExpand) {
+                if (focus) searchInput.focus();
+            } else {
+                searchInput.blur();
+                document.getElementById('search-results-dropdown')?.classList.add('hidden');
+            }
+            return;
+        }
+
         const shouldExpand = Boolean(expanded && isMobile && mobileTab === 'for-you');
         if (mobileSearchCloseTimer !== null) {
             window.clearTimeout(mobileSearchCloseTimer);
@@ -1218,7 +1254,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const SONG_REQUEST_STATUS_LABELS = Object.freeze({
         new: 'Mới',
-        seen: 'Đã xem',
+        seen: 'Đã duyệt',
         done: 'Hoàn thành',
         rejected: 'Từ chối'
     });
@@ -1254,6 +1290,15 @@ document.addEventListener('DOMContentLoaded', () => {
             const bTime = new Date(b?.$createdAt || 0).getTime();
             return bTime - aTime;
         });
+    }
+
+    function isAdminNoteApproved(request) {
+        // Keep legacy "done" notes approved; legacy "rejected" notes can be reviewed again.
+        return ['seen', 'done'].includes(String(request?.status || 'new').toLowerCase());
+    }
+
+    function countPendingAdminNotes(requests) {
+        return requests.filter((request) => !isAdminNoteApproved(request)).length;
     }
 
     function renderTransientNotes() {
@@ -1296,7 +1341,8 @@ document.addEventListener('DOMContentLoaded', () => {
         adminNotesList.replaceChildren();
 
         const requests = sortSongRequests(adminSongRequests).filter((request) => {
-            return adminNoteFilter === 'all' || String(request.status || 'new') === adminNoteFilter;
+            return adminNoteFilter === 'all'
+                || (adminNoteFilter === 'approved' ? isAdminNoteApproved(request) : !isAdminNoteApproved(request));
         });
         if (requests.length === 0) {
             const empty = document.createElement('p');
@@ -1323,23 +1369,17 @@ document.addEventListener('DOMContentLoaded', () => {
             const message = document.createElement('p');
             message.className = 'song-request-message';
             message.textContent = request.message || '';
-            const reply = document.createElement('textarea');
-            reply.className = 'admin-note-reply';
-            reply.maxLength = 2000;
-            reply.placeholder = 'Phản hồi (không bắt buộc)';
-            reply.value = request.adminReply || '';
-
             const actions = document.createElement('div');
             actions.className = 'admin-note-actions';
-            ['seen', 'done', 'rejected'].forEach((nextStatus) => {
+            if (!isAdminNoteApproved(request)) {
                 const button = document.createElement('button');
                 button.type = 'button';
                 button.className = 'btn-note-action';
-                button.textContent = getSongRequestStatusLabel(nextStatus);
+                button.textContent = 'Duyệt';
                 button.addEventListener('click', async () => {
                     button.disabled = true;
                     try {
-                        const result = await updateAdminSongRequest(request.$id, nextStatus, reply.value);
+                        const result = await updateAdminSongRequest(request.$id, 'seen', request.adminReply || '');
                         const index = adminSongRequests.findIndex((entry) => entry.$id === request.$id);
                         if (index >= 0 && result?.request) adminSongRequests[index] = result.request;
                         renderAdminNotes();
@@ -1351,7 +1391,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 });
                 actions.appendChild(button);
-            });
+            }
 
             const deleteButton = document.createElement('button');
             deleteButton.type = 'button';
@@ -1384,9 +1424,10 @@ document.addEventListener('DOMContentLoaded', () => {
             actions.appendChild(deleteButton);
 
             const status = document.createElement('span');
-            status.className = `song-request-status status-${request.status || 'new'}`;
-            status.textContent = getSongRequestStatusLabel(request.status);
-            item.append(header, contact, message, status, reply, actions);
+            const approved = isAdminNoteApproved(request);
+            status.className = `song-request-status status-${approved ? 'seen' : 'new'}`;
+            status.textContent = approved ? 'Đã duyệt' : 'Chưa duyệt';
+            item.append(header, contact, message, status, actions);
             adminNotesList.appendChild(item);
         });
     }
@@ -1396,14 +1437,14 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const result = await executeSongAdminFunction(
                 { action: NOTE_ACTIONS.LIST },
-                'Không thể tải số note mới.'
+                'Không thể tải số note chưa duyệt.'
             );
             isNotesAdmin = true;
             updateAdminUI();
             const requests = Array.isArray(result?.requests) ? result.requests : [];
-            const newNoteCount = requests.filter((request) => request.status === 'new').length;
-            adminNotesCount.textContent = newNoteCount > 0 ? `(${newNoteCount})` : '';
-            adminNotesCount.classList.toggle('hidden', newNoteCount === 0);
+            const pendingNoteCount = countPendingAdminNotes(requests);
+            adminNotesCount.textContent = pendingNoteCount > 0 ? `(${pendingNoteCount})` : '';
+            adminNotesCount.classList.toggle('hidden', pendingNoteCount === 0);
         } catch (error) {
             console.warn('[LocalSound] Could not refresh admin note count:', error);
             isNotesAdmin = false;
@@ -1415,7 +1456,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function updateAdminNoteCountFromLoadedRequests() {
         if (!adminNotesCount) return;
-        const count = adminSongRequests.filter(request => request.status === 'new').length;
+        const count = countPendingAdminNotes(adminSongRequests);
         adminNotesCount.textContent = count > 0 ? `(${count})` : '';
         adminNotesCount.classList.toggle('hidden', count === 0);
     }
@@ -1429,11 +1470,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 'Không thể tải danh sách note.'
             );
             adminSongRequests = Array.isArray(result?.requests) ? result.requests : [];
-            const newNoteCount = adminSongRequests.filter((request) => request.status === 'new').length;
-            adminNotesCount.textContent = newNoteCount > 0 ? `(${newNoteCount})` : '';
-            adminNotesCount.classList.toggle('hidden', newNoteCount === 0);
+            const pendingNoteCount = countPendingAdminNotes(adminSongRequests);
+            adminNotesCount.textContent = pendingNoteCount > 0 ? `(${pendingNoteCount})` : '';
+            adminNotesCount.classList.toggle('hidden', pendingNoteCount === 0);
             renderAdminNotes();
-            setAdminNotesStatus('Đã cập nhật.');
+            setAdminNotesStatus('');
         } catch (error) {
             console.error('[LocalSound] Could not load admin notes:', error);
             setAdminNotesStatus('Không lấy được dữ liệu.', true);
@@ -2927,7 +2968,7 @@ document.addEventListener('DOMContentLoaded', () => {
             currentPlayingSong = null;
             currentPlaybackPlaylistContext = null;
             activeSong = null;
-            if (currentTitle) currentTitle.textContent = 'Chưa có bài hát';
+            if (currentTitle) currentTitle.textContent = '';
             updatePlayerUI();
             updateMiniPlayerUI();
             updateMediaSession();
@@ -2968,7 +3009,7 @@ document.addEventListener('DOMContentLoaded', () => {
             currentPlaylist = recentArr.map(id => visibleSongs.find(s => s && s.id === id)).filter(Boolean);
             playlistHeadingEl.textContent = 'Vừa Nghe Gần Đây';
         } else {
-            playlistHeadingEl.textContent = isMobile ? 'Tất Cả' : 'Tất Cả Bài Hát (A - Z)';
+            playlistHeadingEl.textContent = isMobile ? 'Tất Cả' : 'Tất Cả Bài Hát';
         }
 
         if (resetFolderBtn) {
@@ -3307,7 +3348,7 @@ document.addEventListener('DOMContentLoaded', () => {
             currentIndex = -1;
             currentPlayingSong = null;
             currentPlaybackPlaylistContext = null;
-            if (currentTitle) currentTitle.textContent = 'Chưa có bài hát';
+            if (currentTitle) currentTitle.textContent = '';
         }
 
         allSongs = allSongs.filter(s => s && s.id !== song.id);
@@ -4657,7 +4698,7 @@ document.addEventListener('DOMContentLoaded', () => {
             currentPlaybackPlaylistContext = null;
             audio.removeAttribute('src');
             audio.load();
-            if (currentTitle) currentTitle.textContent = 'Chưa có bài hát';
+            if (currentTitle) currentTitle.textContent = '';
             updatePlayerUI();
             showToast('Chưa có bài hát trong thư viện.', 'info');
             return;
@@ -4690,6 +4731,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (appContainer) appContainer.scrollTop = 0;
         const mainContent = document.querySelector('.main-content');
         if (mainContent) mainContent.scrollTop = 0;
+        const workspaceContent = document.querySelector('.workspace-content');
+        if (workspaceContent) workspaceContent.scrollTop = 0;
 
         const mobileTabForYou = document.getElementById('mobile-tab-for-you');
         const mobileTabLibrary = document.getElementById('mobile-tab-library');
@@ -4705,12 +4748,8 @@ document.addEventListener('DOMContentLoaded', () => {
     function updateMiniPlayerVisibility() {
         const mobileMiniPlayer = document.getElementById('mobile-mini-player');
         if (!mobileMiniPlayer) return;
-        const song = getCurrentPlayingSong();
-        if (mobileTab === 'library' && song) {
-            mobileMiniPlayer.classList.remove('hidden');
-        } else {
-            mobileMiniPlayer.classList.add('hidden');
-        }
+        // The former mini-player is now metadata in the shared, fixed dock.
+        mobileMiniPlayer.classList.remove('hidden');
     }
 
     function updateMiniPlayerUI() {
@@ -4719,10 +4758,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const miniArtist = document.getElementById('mini-artist');
 
         const song = getCurrentPlayingSong();
-        if (song) {
-            if (miniTitle) miniTitle.textContent = song.title;
-            if (miniArtist) miniArtist.textContent = normalizeFolderList(song.folders).join(' · ') || 'SoundKer';
+        if (miniTitle) {
+            miniTitle.textContent = song?.title || '';
+            miniTitle.title = miniTitle.textContent;
         }
+        if (miniArtist) miniArtist.textContent = song
+            ? normalizeFolderList(song.folders).join(' · ') || 'SoundKer'
+            : 'SoundKer';
 
         if (window.LocalSoundIcons) {
             window.LocalSoundIcons.setPlaying(isPlaying);
@@ -4764,7 +4806,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     artist: normalizeFolderList(song.folders).join(' · ') || 'SoundKer Music',
                     album: 'SoundKer Music',
                     artwork: [
-                        { src: document.getElementById('site-favicon')?.href || `${ASSET_BASE_PATH}logo/orange.png`, sizes: '1254x1254', type: 'image/png' }
+                        { src: document.getElementById('site-favicon')?.href || `${ASSET_BASE_PATH}logo/logolight.webp`, sizes: 'any', type: 'image/webp' }
                     ]
                 });
             } catch (e) {
@@ -5123,7 +5165,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         document.querySelectorAll('[data-note-filter]').forEach((button) => {
             button.addEventListener('click', () => {
-                adminNoteFilter = button.dataset.noteFilter || 'new';
+                adminNoteFilter = button.dataset.noteFilter || 'pending';
                 document.querySelectorAll('[data-note-filter]').forEach((item) => {
                     item.classList.toggle('active', item === button);
                 });
@@ -5207,10 +5249,13 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // Mobile Mini Player Handlers
+        // Keep the existing jump back to the player from the shared dock.
         const miniPlayerInfo = document.getElementById('mini-player-info');
         const miniPlayBtn = document.getElementById('mini-play-btn');
-        if (miniPlayerInfo) miniPlayerInfo.addEventListener('click', () => setMobileTab('for-you'));
+        if (miniPlayerInfo) miniPlayerInfo.addEventListener('click', () => {
+            if (isMobileLayout()) setMobileTab('for-you');
+            document.querySelector('.workspace-player')?.scrollIntoView({ block: 'nearest' });
+        });
         if (miniPlayBtn) miniPlayBtn.addEventListener('click', (e) => { e.stopPropagation(); togglePlayPause(); });
 
         // Helper functions for Favorite Single Click & Press-and-Hold
@@ -5526,12 +5571,30 @@ document.addEventListener('DOMContentLoaded', () => {
         if (searchBox && searchToggleBtn && searchInput) {
             searchToggleBtn.addEventListener('click', () => {
                 if (!isMobileLayout()) {
+                    // Desktop: toggle collapsed
+                    const isCollapsed = searchBox.classList.contains('desktop-search-collapsed');
+                    setMobileSearchExpanded(isCollapsed, { focus: isCollapsed });
+                    return;
+                }
+                if (mobileTab === 'library') {
                     searchInput.focus();
                     return;
                 }
-
                 const isCollapsed = searchBox.classList.contains('mobile-search-collapsed');
                 setMobileSearchExpanded(isCollapsed, { focus: isCollapsed });
+            });
+
+            searchBox.addEventListener('click', (e) => {
+                if (searchToggleBtn && searchToggleBtn.contains(e.target)) return;
+                if (clearSearchBtn && clearSearchBtn.contains(e.target)) return;
+                if (searchInput && searchInput.contains(e.target)) return;
+
+                if (!isMobileLayout()) {
+                    const isCollapsed = searchBox.classList.contains('desktop-search-collapsed');
+                    setMobileSearchExpanded(isCollapsed, { focus: true });
+                } else if (searchInput) {
+                    searchInput.focus();
+                }
             });
         }
 
@@ -5554,9 +5617,27 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         document.addEventListener('click', (e) => {
+            if (!searchBox) return;
+
+            // Desktop: đóng search khi click ra ngoài
+            if (!isMobileLayout()) {
+                if (
+                    !searchBox.classList.contains('desktop-search-collapsed') &&
+                    !searchBox.contains(e.target)
+                ) {
+                    const hadQuery = searchQuery !== '' || Boolean(searchInput?.value);
+                    if (searchInput) { searchInput.value = ''; searchInput.blur(); }
+                    searchQuery = '';
+                    clearSearchBtn?.classList.add('hidden');
+                    const dropdown = document.getElementById('search-results-dropdown');
+                    if (dropdown) { dropdown.classList.add('hidden'); dropdown.innerHTML = ''; }
+                    setMobileSearchExpanded(false);
+                    if (hadQuery) filterAndRenderSongs();
+                }
+                return;
+            }
+
             if (
-                !isMobileLayout() ||
-                !searchBox ||
                 searchBox.classList.contains('mobile-search-collapsed') ||
                 searchBox.contains(e.target)
             ) return;
@@ -5768,6 +5849,8 @@ document.addEventListener('DOMContentLoaded', () => {
             e.preventDefault();
             if (isMobileLayout() && searchBox?.classList.contains('mobile-search-collapsed')) {
                 setMobileSearchExpanded(true);
+            } else if (!isMobileLayout() && searchBox?.classList.contains('desktop-search-collapsed')) {
+                setMobileSearchExpanded(true, { focus: true });
             }
             if (searchInput) searchInput.focus();
         }
@@ -5807,11 +5890,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const drawBar = (x, barHeight) => {
             if (barHeight <= 0) return;
             const gradient = canvasCtx.createLinearGradient(0, height, 0, height - barHeight);
-            gradient.addColorStop(0, 'rgba(0, 245, 160, 0.5)');
-            gradient.addColorStop(0.25, 'rgba(0, 217, 245, 0.78)');
-            gradient.addColorStop(0.5, 'rgba(134, 168, 231, 0.9)');
-            gradient.addColorStop(0.75, 'rgba(255, 102, 0, 0.98)');
-            gradient.addColorStop(1, 'rgba(220, 255, 189, 0.98)');
+            gradient.addColorStop(0, 'rgba(87, 125, 16, 0.5)');
+            gradient.addColorStop(0.25, 'rgba(142, 204, 36, 0.78)');
+            gradient.addColorStop(0.5, 'rgba(168, 236, 48, 0.9)');
+            gradient.addColorStop(0.75, 'rgba(184, 255, 60, 0.98)');
+            gradient.addColorStop(1, 'rgba(225, 255, 167, 0.98)');
             canvasCtx.fillStyle = gradient;
             canvasCtx.fillRect(x, height - barHeight, barWidth, barHeight);
         };
@@ -5910,11 +5993,11 @@ document.addEventListener('DOMContentLoaded', () => {
         resizeWaveCanvas();
 
         // ── Colour helpers ───────────────────────────────────────────────────
-        // Use the app's --accent CSS variable or the SoundKer orange fallback.
+        // Use the app's --accent CSS variable or the requested lime fallback.
         function getAccentColor() {
             const v = getComputedStyle(document.documentElement)
                 .getPropertyValue('--accent').trim();
-            return v || '#FF6600';
+            return v || '#B8FF3C';
         }
 
         // Build a vertical gradient for each bar (dim at centre axis → bright at tip)
@@ -5922,18 +6005,18 @@ document.addEventListener('DOMContentLoaded', () => {
             // bars grow upward AND downward from cy
             const grad = ctx.createLinearGradient(0, cy - barHeight, 0, cy + barHeight);
             if (isDark) {
-                grad.addColorStop(0,    'rgba(255,212,179,0.92)');  // top tip
-                grad.addColorStop(0.30, 'rgba(255,102,0,1.00)');
-                grad.addColorStop(0.50, 'rgba(179,71,0,0.60)');  // centre fade
-                grad.addColorStop(0.70, 'rgba(255,102,0,1.00)');
-                grad.addColorStop(1,    'rgba(255,212,179,0.92)');  // bottom tip
+                grad.addColorStop(0,    'rgba(225,255,167,0.92)');  // top tip
+                grad.addColorStop(0.30, 'rgba(184,255,60,1.00)');
+                grad.addColorStop(0.50, 'rgba(87,125,16,0.60)');  // centre fade
+                grad.addColorStop(0.70, 'rgba(184,255,60,1.00)');
+                grad.addColorStop(1,    'rgba(225,255,167,0.92)');  // bottom tip
             } else {
                 // Light theme: slightly more saturated so bars stay visible
-                grad.addColorStop(0,    'rgba(255,102,0,0.90)');
-                grad.addColorStop(0.30, 'rgba(179,71,0,0.85)');
-                grad.addColorStop(0.50, 'rgba(179,71,0,0.45)');
-                grad.addColorStop(0.70, 'rgba(179,71,0,0.85)');
-                grad.addColorStop(1,    'rgba(255,102,0,0.90)');
+                grad.addColorStop(0,    'rgba(142,204,36,0.90)');
+                grad.addColorStop(0.30, 'rgba(87,125,16,0.85)');
+                grad.addColorStop(0.50, 'rgba(87,125,16,0.45)');
+                grad.addColorStop(0.70, 'rgba(87,125,16,0.85)');
+                grad.addColorStop(1,    'rgba(142,204,36,0.90)');
             }
             return grad;
         }
@@ -5943,7 +6026,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const alpha = isDark
                 ? Math.min(0.62, 0.12 + energy * 0.48)
                 : Math.min(0.42, 0.08 + energy * 0.32);
-            return `rgba(255,102,0,${alpha.toFixed(2)})`;
+            return `rgba(184,255,60,${alpha.toFixed(2)})`;
         }
 
         // ── Main draw loop ───────────────────────────────────────────────────
@@ -6127,7 +6210,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Draw a thin centre axis line (very subtle)
             const axisAlpha = isDark ? 0.12 : 0.07;
-            wctx.strokeStyle = `rgba(255,102,0,${axisAlpha})`;
+            wctx.strokeStyle = `rgba(184,255,60,${axisAlpha})`;
             wctx.lineWidth = 1;
             wctx.beginPath();
             wctx.moveTo(0, cy);
