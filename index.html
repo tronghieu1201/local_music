@@ -8,7 +8,7 @@
     <link id="site-favicon" rel="icon" type="image/webp" href="assets/logo/logolight.webp?v=3">
     <script src="src/theme.js?v=lime-5"></script>
     <link rel="stylesheet" href="src/styles.css?v=admin-notes-12">
-    <link rel="stylesheet" href="src/workspace.css?v=admin-notes-12">
+    <link rel="stylesheet" href="src/workspace.css?v=mobile-player-14">
     <link rel="stylesheet" href="src/sakura-background.css?v=1">
     <script defer src="src/sakura-background.js?v=2"></script>
     <!-- Lucide + Morphicons icon system (ESM module, loaded before app.js) -->
@@ -51,19 +51,19 @@
                     <span class="nav-label nav-label-full" aria-hidden="true">Bài hát chưa chọn</span>
                     <span class="count-badge" id="unfiled-count">0</span>
                 </button>
-                <button class="nav-item" data-tab="karaoke">
-                    <span class="icon-cat icon-karaoke"></span>
-                    <span>Karaoke</span>
-                    <span class="count-badge" id="karaoke-count">0</span>
-                </button>
-                <button class="nav-item" data-tab="ker">
-                    <span class="icon-cat icon-ker"></span>
-                    <span>Ker</span>
+                <button class="nav-item" data-tab="ker" title="Ker" aria-label="Ker">
+                    <span class="icon-cat icon-ker" aria-hidden="true"></span>
+                    <span class="nav-label" aria-hidden="true">Ker</span>
                     <span class="count-badge" id="ker-count">0</span>
                 </button>
-                <button class="nav-item" data-tab="note">
-                    <span class="icon-cat icon-note"></span>
-                    <span>Ghi Chú</span>
+                <button class="nav-item" data-tab="karaoke" title="Karaoke" aria-label="Karaoke">
+                    <span class="icon-cat icon-karaoke" aria-hidden="true"></span>
+                    <span class="nav-label" aria-hidden="true">Karaoke</span>
+                    <span class="count-badge" id="karaoke-count">0</span>
+                </button>
+                <button class="nav-item" data-tab="note" title="Ghi Chú" aria-label="Ghi Chú">
+                    <span class="icon-cat icon-note" aria-hidden="true"></span>
+                    <span class="nav-label" aria-hidden="true">Ghi Chú</span>
                 </button>
                 <button class="nav-item" data-tab="recent" title="Vừa Nghe Gần Đây" aria-label="Vừa Nghe Gần Đây">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -664,11 +664,11 @@
     <div class="modal" id="temporary-data-info-modal" role="dialog" aria-modal="true" aria-labelledby="temporary-data-info-title" aria-describedby="temporary-data-info-message">
         <div class="modal-content small notice-modal-content">
             <div class="modal-header">
-                <h3 id="temporary-data-info-title">88888</h3>
+                <h3 id="temporary-data-info-title">Chú ý</h3>
                 <button class="close-btn" id="temporary-data-info-close" type="button" aria-label="Đóng">&times;</button>
             </div>
             <div class="modal-body">
-                <p class="notice-modal-message" id="temporary-data-info-message">Data mp3 cũ đã bị hỏng. Hiện tại đang sử dụng data ảo tạm thời thay thế ( mang tính chất demo ).</p>
+                <p class="notice-modal-message" id="temporary-data-info-message">Đây là các bài hát tôi thích nghe nên đừng ý kiến</p>
             </div>
         </div>
     </div>
@@ -681,7 +681,7 @@
     <!-- Toast Notification Container -->
     <div id="toast-container" class="toast-container"></div>
 
-    <!-- Shared player dock: the same controls remain available in every view. -->
+    <!-- Shared audio: full controls in the player, a compact bar in the mobile library. -->
     <footer class="player-dock" aria-label="Điều khiển phát nhạc">
         <div class="dock-now-playing" id="mobile-mini-player">
             <button class="dock-track-button" id="mini-player-info" type="button" title="Nghe nhạc">
@@ -694,6 +694,12 @@
                 </span>
             </button>
         </div>
+        <button class="dock-mini-play" id="mini-play-btn" type="button" title="Phát" aria-label="Phát" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" width="20" height="20" aria-hidden="true">
+                <path id="mini-pp-path" d="m6 3 15 9-15 9Z"></path>
+            </svg>
+        </button>
         <div class="dock-transport">
             <!-- Progress Bar -->
             <div class="dock-progress">
@@ -788,7 +794,7 @@
 
     <!-- Mobile Bottom Navigation Bar -->
     <nav class="mobile-bottom-nav" id="mobile-bottom-nav">
-        <button class="mobile-nav-tab active" id="mobile-tab-for-you" data-mobile-tab="for-you">
+        <button class="mobile-nav-tab active" id="mobile-tab-for-you" data-mobile-tab="for-you" type="button" aria-pressed="true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path
                     d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z">
@@ -796,14 +802,14 @@
             </svg>
             <span>Nghe nhạc</span>
         </button>
-        <button class="mobile-nav-tab" id="mobile-tab-library" data-mobile-tab="library">
+        <button class="mobile-nav-tab" id="mobile-tab-library" data-mobile-tab="library" type="button" aria-pressed="false">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                 <circle cx="12" cy="7" r="4"></circle>
             </svg>
             <span>Thư viện</span>
         </button>
-        <button class="mobile-nav-tab" id="mobile-tab-settings" type="button" aria-label="Cài đặt">
+        <button class="mobile-nav-tab" id="mobile-tab-settings" data-mobile-tab="settings" type="button" aria-label="Cài đặt" aria-pressed="false" aria-haspopup="dialog" aria-controls="mobile-settings-modal" aria-expanded="false">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path>
                 <circle cx="12" cy="12" r="3"></circle>
@@ -820,7 +826,7 @@
     <script src="src/admin-diagnostics.js"></script>
     <script src="src/admin-integrity.js"></script>
     <script src="src/library-cache.js?v=6ab3a652002e667289ab-2"></script>
-    <script src="src/app.js?v=admin-notes-12"></script>
+    <script src="src/app.js?v=mobile-player-14"></script>
 </body>
 
 </html>

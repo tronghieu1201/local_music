@@ -138,7 +138,7 @@ document.addEventListener('DOMContentLoaded', () => {
         'nau an', 'cooking', 'wedding', 'wedding-couple',
         'giai tri', 'giaitri', 'game', 'game-over'
     ]);
-    const CATEGORY_TAB_KEYS = Object.freeze(['karaoke', 'ker']);
+    const CATEGORY_TAB_KEYS = Object.freeze(['ker', 'karaoke']);
     const PLAYLIST_TAB_LABELS = Object.freeze({
         all: 'Tất Cả',
         unfiled: 'Bài Hát Chưa Chọn',
@@ -3152,8 +3152,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const hasKer = isSongCategoryActive(song, 'ker');
 
             const categoryTagButtons = canEditCategories ? `
-                    <button class="cat-tag-btn ${hasKaraoke ? 'active' : ''}" data-cat="karaoke" title="Karaoke"><span class="icon-cat icon-karaoke"></span></button>
                     <button class="cat-tag-btn ${hasKer ? 'active' : ''}" data-cat="ker" title="Ker"><span class="icon-cat icon-ker"></span></button>
+                    <button class="cat-tag-btn ${hasKaraoke ? 'active' : ''}" data-cat="karaoke" title="Karaoke"><span class="icon-cat icon-karaoke"></span></button>
                 ` : '';
 
             const songActions = canEditCategories ? `
@@ -4497,6 +4497,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const categoryLabel = document.getElementById('mobile-discovery-category-label');
         const categoryIcon = document.getElementById('mobile-discovery-category-icon');
         const forYouSelected = mobileDiscoveryMode === 'for-you';
+        const showCategoryIcon = !forYouSelected && CATEGORY_TAB_KEYS.includes(mobileDiscoveryCategoryKey);
+        const categoryName = PLAYLIST_TAB_LABELS[mobileDiscoveryCategoryKey] || mobileDiscoveryCategoryKey;
 
         if (forYouButton) {
             forYouButton.classList.toggle('active', forYouSelected);
@@ -4505,14 +4507,14 @@ document.addEventListener('DOMContentLoaded', () => {
         if (categoryButton) {
             categoryButton.classList.toggle('active', !forYouSelected);
             categoryButton.setAttribute('aria-pressed', String(!forYouSelected));
+            categoryButton.setAttribute('aria-label', showCategoryIcon ? `Danh mục: ${categoryName}` : 'Danh mục');
+            categoryButton.title = showCategoryIcon ? categoryName : 'Danh mục';
         }
         if (categoryLabel) {
-            categoryLabel.textContent = mobileDiscoveryCategoryKey
-                ? (PLAYLIST_TAB_LABELS[mobileDiscoveryCategoryKey] || mobileDiscoveryCategoryKey)
-                : 'Danh mục';
+            categoryLabel.textContent = 'Danh mục';
+            categoryLabel.classList.toggle('hidden', showCategoryIcon);
         }
         if (categoryIcon) {
-            const showCategoryIcon = !forYouSelected && CATEGORY_TAB_KEYS.includes(mobileDiscoveryCategoryKey);
             categoryIcon.className = showCategoryIcon
                 ? `icon-cat icon-${mobileDiscoveryCategoryKey}`
                 : 'icon-cat hidden';
@@ -4560,6 +4562,8 @@ document.addEventListener('DOMContentLoaded', () => {
             item.type = 'button';
             item.dataset.category = categoryKey;
             item.setAttribute('role', 'menuitem');
+            item.setAttribute('aria-label', label);
+            item.title = label;
             const isSelected = mobileDiscoveryMode === 'category' && mobileDiscoveryCategoryKey === categoryKey;
             item.classList.toggle('active', isSelected);
             if (isSelected) item.setAttribute('aria-current', 'true');
@@ -4708,7 +4712,22 @@ document.addEventListener('DOMContentLoaded', () => {
         playTrack(randomIndex, getCurrentPlaylistContext('Dành cho bạn'));
     }
 
+    function updateMobileBottomNav() {
+        const settingsOpen = document.getElementById('mobile-settings-modal')?.classList.contains('active');
+        const activeTab = settingsOpen ? 'settings' : mobileTab;
+        document.querySelectorAll('.mobile-bottom-nav .mobile-nav-tab').forEach((button) => {
+            const selected = button.dataset.mobileTab === activeTab;
+            button.classList.toggle('active', selected);
+            button.setAttribute('aria-pressed', String(selected));
+            if (button.dataset.mobileTab === 'settings') {
+                button.setAttribute('aria-expanded', String(Boolean(settingsOpen)));
+            }
+        });
+    }
+
     function setMobileTab(tab) {
+        document.getElementById('mobile-settings-modal')?.classList.remove('active');
+        closeMobileDiscoveryCategoryMenu();
         if (tab !== 'for-you') setMobileSearchExpanded(false, { immediate: true });
         mobileTab = tab;
         try {
@@ -4734,10 +4753,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const workspaceContent = document.querySelector('.workspace-content');
         if (workspaceContent) workspaceContent.scrollTop = 0;
 
-        const mobileTabForYou = document.getElementById('mobile-tab-for-you');
-        const mobileTabLibrary = document.getElementById('mobile-tab-library');
-        if (mobileTabForYou) mobileTabForYou.classList.toggle('active', tab === 'for-you');
-        if (mobileTabLibrary) mobileTabLibrary.classList.toggle('active', tab === 'library');
+        updateMobileBottomNav();
 
         if (tab === 'for-you') initializeMobileDiscoveryIfNeeded();
         updateMobileDiscoveryNav();
@@ -4746,9 +4762,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function updateMiniPlayerVisibility() {
+        document.body.classList.toggle('has-current-track', Boolean(getCurrentPlayingSong()));
         const mobileMiniPlayer = document.getElementById('mobile-mini-player');
         if (!mobileMiniPlayer) return;
-        // The former mini-player is now metadata in the shared, fixed dock.
+        // CSS switches the shared dock between full controls and the library's mini-player.
         mobileMiniPlayer.classList.remove('hidden');
     }
 
@@ -4756,6 +4773,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const miniDisc = document.getElementById('mini-disc');
         const miniTitle = document.getElementById('mini-title');
         const miniArtist = document.getElementById('mini-artist');
+        const miniPlayButton = document.getElementById('mini-play-btn');
+        const miniPlayerInfo = document.getElementById('mini-player-info');
 
         const song = getCurrentPlayingSong();
         if (miniTitle) {
@@ -4765,6 +4784,15 @@ document.addEventListener('DOMContentLoaded', () => {
         if (miniArtist) miniArtist.textContent = song
             ? normalizeFolderList(song.folders).join(' · ') || 'SoundKer'
             : 'SoundKer';
+        if (miniPlayButton) {
+            const action = isPlaying ? 'Tạm dừng' : 'Phát';
+            miniPlayButton.disabled = !song;
+            miniPlayButton.title = action;
+            miniPlayButton.setAttribute('aria-label', action);
+        }
+        if (miniPlayerInfo) {
+            miniPlayerInfo.setAttribute('aria-label', song ? `Nghe nhạc: ${song.title}` : 'Nghe nhạc');
+        }
 
         if (window.LocalSoundIcons) {
             window.LocalSoundIcons.setPlaying(isPlaying);
@@ -4856,7 +4884,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const song = getCurrentPlayingSong();
         if (!song) return;
         if (!isAdmin) {
-            showToast('Chỉ Admin mới được chỉnh folder bài hát.', 'warning');
+            showToast('error', 'warning');
             return;
         }
         document.getElementById('player-more-modal')?.classList.remove('active');
@@ -4870,8 +4898,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (songNameEl) songNameEl.textContent = `🎵 ${song.title}`;
 
         const categories = [
-            { key: 'karaoke', label: '<span class="icon-cat icon-karaoke" style="margin-right: 6px;"></span> Karaoke' },
             { key: 'ker', label: '<span class="icon-cat icon-ker" style="margin-right: 6px;"></span> Ker' },
+            { key: 'karaoke', label: '<span class="icon-cat icon-karaoke" style="margin-right: 6px;"></span> Karaoke' },
         ];
 
         const songCats = getSongCategoriesForUI(song);
@@ -5266,7 +5294,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
             if (!isAdmin) {
-                showToast('Chỉ Admin mới được chỉnh folder bài hát.', 'warning');
+                showToast('error', 'warning');
                 return;
             }
 
@@ -6324,14 +6352,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function openMobileSettingsModal() {
         if (!mobileSettingsModal) return;
+        closeMobileDiscoveryCategoryMenu();
         mobileSettingsModal.classList.add('active');
-        if (mobileTabSettings && isMobileLayout()) mobileTabSettings.classList.add('active');
+        updateMobileBottomNav();
     }
 
     function closeMobileSettingsModal() {
         if (!mobileSettingsModal) return;
         mobileSettingsModal.classList.remove('active');
-        if (mobileTabSettings) mobileTabSettings.classList.remove('active');
+        updateMobileBottomNav();
     }
 
     if (desktopSettingsBtn) {
