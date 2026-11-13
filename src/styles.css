@@ -282,7 +282,7 @@ body {
 }
 
 .icon-cat.icon-ker {
-    background-image: url("../assets/logo/leaf.webp");
+    background-image: url("../assets/logo/logo.webp");
 }
 
 .icon-cat.icon-note {
@@ -7639,18 +7639,6 @@ button:active {
 .logo-icon .brand-logo-img {
     position: absolute;
     inset: 0;
-}
-
-.brand-logo-img--dark {
-    opacity: 0;
-}
-
-:root[data-theme="dark"] .brand-logo-img--light {
-    opacity: 0;
-}
-
-:root[data-theme="dark"] .brand-logo-img--dark {
-    opacity: 1;
 }
 
 .theme-toggle .theme-icon-sun,

@@ -5,10 +5,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SoundKer - Trình Nghe Nhạc</title>
-    <link id="site-favicon" rel="icon" type="image/webp" href="assets/logo/logolight.webp?v=3">
-    <script src="src/theme.js?v=lime-5"></script>
-    <link rel="stylesheet" href="src/styles.css?v=admin-notes-12">
-    <link rel="stylesheet" href="src/workspace.css?v=mobile-player-14">
+    <link id="site-favicon" rel="icon" type="image/webp" href="assets/logo/favicon.webp?v=4">
+    <script src="src/theme.js?v=lime-6"></script>
+    <link rel="stylesheet" href="src/styles.css?v=admin-notes-13">
+    <link rel="stylesheet" href="src/workspace.css?v=mobile-player-15">
     <link rel="stylesheet" href="src/sakura-background.css?v=1">
     <script defer src="src/sakura-background.js?v=2"></script>
     <!-- Lucide + Morphicons icon system (ESM module, loaded before app.js) -->
@@ -23,8 +23,7 @@
             <div class="workspace-brand" id="brand-home-btn" role="button" tabindex="0" title="Về trang chủ (Tất cả bài hát)">
                 <div class="workspace-brand-text">
                     <span class="workspace-brand-logo" aria-hidden="true">
-                        <img class="brand-logo-img brand-logo-img--light" src="assets/logo/logolight.webp" alt="">
-                        <img class="brand-logo-img brand-logo-img--dark" src="assets/logo/logodark.webp" alt="">
+                        <img class="brand-logo-img" src="assets/logo/logo.webp" alt="">
                     </span>
                     <h1>SoundKer</h1>
                     <span class="workspace-plan">Ker Pro</span>
@@ -651,7 +650,7 @@
                 <h3 id="temporary-data-notice-title">Thông báo</h3>
             </div>
             <div class="modal-body">
-                <p class="notice-modal-message" id="temporary-data-notice-message">Website đang sử dụng dữ liệu tạm thời để thay thế dữ liệu gốc.</p>
+                <p class="notice-modal-message" id="temporary-data-notice-message">Ở đây chỉ có bài hát mà tao thích nghe</p>
                 <div class="notice-modal-actions">
                     <button class="btn-secondary" id="temporary-data-notice-snooze" type="button">Đóng 24h</button>
                     <button class="btn-primary" id="temporary-data-notice-close" type="button">Đóng</button>
@@ -664,11 +663,11 @@
     <div class="modal" id="temporary-data-info-modal" role="dialog" aria-modal="true" aria-labelledby="temporary-data-info-title" aria-describedby="temporary-data-info-message">
         <div class="modal-content small notice-modal-content">
             <div class="modal-header">
-                <h3 id="temporary-data-info-title">Chú ý</h3>
+                <h3 id="temporary-data-info-title">Thông tin</h3>
                 <button class="close-btn" id="temporary-data-info-close" type="button" aria-label="Đóng">&times;</button>
             </div>
             <div class="modal-body">
-                <p class="notice-modal-message" id="temporary-data-info-message">Đây là các bài hát tôi thích nghe nên đừng ý kiến</p>
+                <p class="notice-modal-message" id="temporary-data-info-message">Website chỉ có các bài hát mà tao thích nghe, nên đừng ý kiến. Nhưng mày cũng có thể yêu cầu tao cập nhật bài hát mày thích nghe </p>
             </div>
         </div>
     </div>
@@ -826,7 +825,7 @@
     <script src="src/admin-diagnostics.js"></script>
     <script src="src/admin-integrity.js"></script>
     <script src="src/library-cache.js?v=6ab3a652002e667289ab-2"></script>
-    <script src="src/app.js?v=mobile-player-14"></script>
+    <script src="src/app.js?v=mobile-player-15"></script>
 </body>
 
 </html>

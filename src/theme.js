@@ -4,30 +4,11 @@
     const storageKey = 'localsound-appearance-mode-v2';
     const root = document.documentElement;
     const systemAppearance = window.matchMedia('(prefers-color-scheme: dark)');
-    const favicon = document.getElementById('site-favicon');
-
-    function syncBranding() {
-        const dark = root.dataset.theme === 'dark';
-        const asset = `assets/logo/${dark ? 'logodark' : 'logolight'}.webp?v=3`;
-        favicon?.setAttribute('href', asset);
-        // Keep the system media artwork in step without changing playback state.
-        if (favicon && navigator.mediaSession?.metadata) {
-            try {
-                navigator.mediaSession.metadata.artwork = [
-                    { src: favicon.href, sizes: 'any', type: 'image/webp' }
-                ];
-            } catch {
-                // Some browsers do not allow updating active media artwork.
-            }
-        }
-    }
-
     function applyTheme(value) {
         const mode = ['light', 'dark', 'system'].includes(value) ? value : 'system';
         const dark = mode === 'system' ? systemAppearance.matches : mode === 'dark';
         root.dataset.theme = dark ? 'dark' : 'light';
         root.dataset.themeMode = mode;
-        syncBranding();
         const nextLabel = mode === 'system'
             ? `Chuyển sang giao diện ${dark ? 'sáng' : 'tối'}`
             : 'Theo giao diện hệ thống';

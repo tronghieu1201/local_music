@@ -4834,7 +4834,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     artist: normalizeFolderList(song.folders).join(' · ') || 'SoundKer Music',
                     album: 'SoundKer Music',
                     artwork: [
-                        { src: document.getElementById('site-favicon')?.href || `${ASSET_BASE_PATH}logo/logolight.webp`, sizes: 'any', type: 'image/webp' }
+                        { src: `${ASSET_BASE_PATH}logo/logo.webp`, sizes: 'any', type: 'image/webp' }
                     ]
                 });
             } catch (e) {
