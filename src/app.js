@@ -3162,6 +3162,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="song-dropdown-menu hidden">
                         <button class="dropdown-item btn-toggle-song-visibility">${song.isHidden ? 'Hiện bài hát' : 'Ẩn bài hát'}</button>
                         <button class="dropdown-item btn-rename-song">Đổi tên</button>
+                        <button class="dropdown-item btn-download-song">Tải xuống</button>
                         <div class="dropdown-divider"></div>
                         <button class="dropdown-item danger btn-delete-song">Xoá vĩnh viễn</button>
                     </div>
@@ -3239,10 +3240,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const dropdownMenu = songDiv.querySelector('.song-dropdown-menu');
 
-            // 3-Dots actions: visibility, rename, and permanent deletion.
+            // 3-Dots actions: visibility, rename, download, and permanent deletion.
             const moreBtn = songDiv.querySelector('.btn-song-more');
             const visibilityBtn = songDiv.querySelector('.btn-toggle-song-visibility');
             const renameBtn = songDiv.querySelector('.btn-rename-song');
+            const downloadBtn = songDiv.querySelector('.btn-download-song');
             const deleteBtn = songDiv.querySelector('.btn-delete-song');
 
             if (moreBtn && dropdownMenu) {
@@ -3279,6 +3281,14 @@ document.addEventListener('DOMContentLoaded', () => {
                         console.error('[LocalSound] Song rename failed:', error);
                         showToast('Đổi tên thất bại.', 'warning');
                     }
+                });
+            }
+
+            if (downloadBtn) {
+                downloadBtn.addEventListener('click', async (e) => {
+                    e.stopPropagation();
+                    if (dropdownMenu) closeSongDropdownMenu(dropdownMenu);
+                    await downloadSong(song);
                 });
             }
 
@@ -3366,6 +3376,50 @@ document.addEventListener('DOMContentLoaded', () => {
         invalidateManagementStatsCache();
         refreshVisibleManagementStats();
         showToast('Đã xoá thành công.', 'success');
+    }
+
+    // --- Download Song (Admin only) ---
+    async function downloadSong(song) {
+        if (!isAdmin) {
+            showToast('Chỉ admin mới có thể tải bài hát.', 'warning');
+            return;
+        }
+        if (!song?.rowId) {
+            showToast('Tải xuống thất bại: bài hát thiếu dữ liệu.', 'warning');
+            return;
+        }
+
+        showToast('Đang chuẩn bị tải xuống…', 'info');
+        try {
+            const playback = await getPlaybackUrl(song, { forceRefresh: true });
+            const url = playback?.url || playback?.fallbackUrl || '';
+            if (!url) throw new Error('Không lấy được địa chỉ tải file.');
+
+            // Determine a sensible filename: use song title + try to preserve extension
+            const rawFilename = song.filename || song.title || 'bai-hat';
+            const ext = rawFilename.includes('.') ? rawFilename.split('.').pop().split('?')[0] : 'mp3';
+            const safeTitle = (song.title || rawFilename).replace(/[/\\?%*:|"<>]/g, '_').trim() || 'bai-hat';
+            const downloadFilename = `${safeTitle}.${ext}`;
+
+            // Fetch the audio blob so the browser treats it as a download, not navigation
+            const response = await fetch(url);
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const blob = await response.blob();
+            const objectUrl = URL.createObjectURL(blob);
+
+            const anchor = document.createElement('a');
+            anchor.href = objectUrl;
+            anchor.download = downloadFilename;
+            document.body.appendChild(anchor);
+            anchor.click();
+            anchor.remove();
+            URL.revokeObjectURL(objectUrl);
+
+            showToast(`Đã tải xuống "${song.title || 'bài hát'}"`, 'success');
+        } catch (err) {
+            console.error('[LocalSound] Download failed:', err);
+            showToast(`Tải xuống thất bại: ${err?.message || 'Không rõ nguyên nhân.'}`, 'warning');
+        }
     }
 
     async function setSongHidden(song, hidden) {
